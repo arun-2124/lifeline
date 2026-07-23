@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546618041879",
+    "project_id": "lifeline-42717",
+    "storage_bucket": "lifeline-42717.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546618041879:android:7139ae57dd940f674e1e52",
+        "android_client_info": {
+          "package_name": "com.arunbalaji.lifeline"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD02I1g4ZREeC1H6H2BMVNE1a7KRvcKQXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

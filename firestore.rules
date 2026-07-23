@@ -1,0 +1,108 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'ADMIN';
+    }
+
+    function hasRole(targetRole) {
+      return isAuthenticated() && request.auth.token.role == targetRole;
+    }
+
+    function hasValidAccountStatus() {
+      return request.auth.token.accountStatus == 'ACTIVE' || request.auth.token.accountStatus == 'PENDING_VERIFICATION';
+    }
+
+    // Protect User collection
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+                    && !('role' in request.resource.data)
+                    && !('customClaims' in request.resource.data)
+                    && !('isAdmin' in request.resource.data);
+      allow update: if isOwner(userId)
+                    && hasValidAccountStatus()
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'verificationStatus', 'customClaims', 'createdAt', 'accountStatus'])
+                    && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // Protect Donations Collection
+    match /donations/{donationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.donorId == request.auth.uid ||
+        resource.data.matchedNgoId == request.auth.uid ||
+        resource.data.assignedVolunteerId == request.auth.uid ||
+        resource.data.assignedDeliveryPartnerId == request.auth.uid ||
+        (resource.data.status == 'published' && hasRole('NGO')) ||
+        isAdmin()
+      );
+
+      // Create: only donors with active status
+      allow create: if isAuthenticated() &&
+        hasRole('DONOR') &&
+        request.resource.data.donorId == request.auth.uid &&
+        request.resource.data.status in ['draft', 'published'] &&
+        !request.resource.data.keys().hasAny(['aiMatchScore', 'aiRecommendedNgos', 'matchedRequestId']);
+
+      // Update: restricted fields based on status
+      allow update: if isAuthenticated() && (
+        (resource.data.donorId == request.auth.uid &&
+         resource.data.status in ['draft', 'published'] &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['foodItems', 'pickupAddress', 'pickupTimeWindow', 'visibility', 'photos', 'status'])) ||
+        isAdmin()
+      );
+
+      allow delete: if false; // Soft delete only
+    }
+
+    // Status Audit Log (Server-only writes)
+    match /donations/{donationId}/statusLog/{logId} {
+      allow read: if isAuthenticated() && (
+        get(/databases/$(database)/documents/donations/$(donationId)).data.donorId == request.auth.uid ||
+        get(/databases/$(database)/documents/donations/$(donationId)).data.matchedNgoId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if false;
+    }
+
+    // Geohash Spatial Indexes (NGO read, Server-only write)
+    match /geohash_indexes/{hash}/donations/{donationId} {
+      allow read: if isAuthenticated() && (hasRole('NGO') || isAdmin());
+      allow write: if false;
+    }
+
+    // Protect Admin collection
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // Audit logs (server-only write, admin read)
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Rate limits tracker (server-only)
+    match /rate_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    // Idempotency keys tracker (server-only)
+    match /idempotency_keys/{keyId} {
+      allow read, write: if false;
+    }
+  }
+}
