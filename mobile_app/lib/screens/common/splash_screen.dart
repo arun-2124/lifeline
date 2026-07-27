@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
@@ -5,6 +6,7 @@ import 'package:mobile_app/core/constants/app_strings.dart';
 import 'package:mobile_app/providers/app_providers.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
 import 'package:mobile_app/routes/app_router.dart';
+import 'package:mobile_app/utils/app_logger.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -14,31 +16,51 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
-    _checkAuthState();
+    _waitForAuthAndNavigate();
   }
 
-  Future<void> _checkAuthState() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
+  Future<void> _waitForAuthAndNavigate() async {
+    const maxWait = Duration(seconds: 5);
+    const pollInterval = Duration(milliseconds: 300);
+    final deadline = DateTime.now().add(maxWait);
 
-    final authState = ref.read(authNotifierProvider);
-    _navigateBasedOnStatus(authState);
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    while (DateTime.now().isBefore(deadline) && mounted) {
+      final authState = ref.read(authNotifierProvider);
+      if (authState.status != AuthStatus.initial) {
+        AppLogger.d('SPLASH: Auth resolved to ${authState.status} — navigating');
+        _navigateBasedOnStatus(authState);
+        return;
+      }
+      await Future.delayed(pollInterval);
+    }
+
+    if (mounted && !_hasNavigated) {
+      AppLogger.d('SPLASH: Auth timeout — navigating to welcome');
+      _navigateBasedOnStatus(const AuthState(status: AuthStatus.unauthenticated));
+    }
   }
 
   void _navigateBasedOnStatus(AuthState state) {
-    if (!mounted) return;
+    if (!mounted || _hasNavigated) return;
+    _hasNavigated = true;
 
     switch (state.status) {
       case AuthStatus.authenticated:
         final role = state.user?.role ?? 'Donor';
+        AppLogger.d('SPLASH: Navigating to home for role: $role');
         Navigator.of(context).pushReplacementNamed(
           AppRouter.getHomeRouteForRole(role),
         );
         break;
       case AuthStatus.emailVerificationPending:
+        AppLogger.d('SPLASH: Navigating to email verification');
         Navigator.of(context).pushReplacementNamed(
           AppRouter.emailVerificationRoute,
         );
@@ -46,7 +68,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       case AuthStatus.unauthenticated:
       case AuthStatus.error:
       case AuthStatus.initial:
-      default:
+      case AuthStatus.loading:
+        AppLogger.d('SPLASH: Navigating to welcome');
         Navigator.of(context).pushReplacementNamed(
           AppRouter.welcomeRoute,
         );
@@ -57,7 +80,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (previous?.status != next.status) {
+      if (next.status != AuthStatus.initial && !_hasNavigated) {
         _navigateBasedOnStatus(next);
       }
     });

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mobile_app/core/network/api_result.dart';
 import 'package:mobile_app/models/user_model.dart';
 import 'package:mobile_app/repositories/auth_repository.dart';
+import 'package:mobile_app/utils/app_logger.dart';
 
 enum AuthStatus {
   initial,
@@ -58,39 +59,51 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _authStateSubscription?.cancel();
     _authStateSubscription = _authRepository.authStateChanges.listen((firebaseUser) async {
       if (firebaseUser == null) {
+        AppLogger.d('AUTH_PROVIDER: Auth state changed — user signed out');
         state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
       } else {
-        // Fetch Firestore Profile
-        final result = await _authRepository.getUserProfile(uid: firebaseUser.uid);
-        if (result is ApiSuccess<UserModel>) {
-          final userModel = result.data.copyWith(isEmailVerified: firebaseUser.emailVerified);
-          if (!firebaseUser.emailVerified) {
-            state = state.copyWith(
-              status: AuthStatus.emailVerificationPending,
-              user: userModel,
-            );
+        AppLogger.d('AUTH_PROVIDER: Auth state changed — user: ${firebaseUser.uid}, emailVerified: ${firebaseUser.emailVerified}');
+        try {
+          // Fetch Firestore Profile
+          final result = await _authRepository.getUserProfile(uid: firebaseUser.uid);
+          if (result is ApiSuccess<UserModel>) {
+            final userModel = result.data.copyWith(isEmailVerified: firebaseUser.emailVerified);
+            if (!firebaseUser.emailVerified) {
+              state = state.copyWith(
+                status: AuthStatus.emailVerificationPending,
+                user: userModel,
+              );
+            } else {
+              state = state.copyWith(
+                status: AuthStatus.authenticated,
+                user: userModel,
+              );
+            }
+            AppLogger.d('AUTH_PROVIDER: State set to ${state.status}, role: ${userModel.role}');
           } else {
+            // If Firestore profile not ready yet
+            AppLogger.e('AUTH_PROVIDER: Firestore profile not found, using fallback');
+            final fallbackUser = UserModel(
+              uid: firebaseUser.uid,
+              fullName: firebaseUser.displayName ?? '',
+              email: firebaseUser.email ?? '',
+              phoneNumber: firebaseUser.phoneNumber ?? '',
+              role: 'Donor',
+              createdAt: DateTime.now(),
+              isEmailVerified: firebaseUser.emailVerified,
+            );
             state = state.copyWith(
-              status: AuthStatus.authenticated,
-              user: userModel,
+              status: firebaseUser.emailVerified
+                  ? AuthStatus.authenticated
+                  : AuthStatus.emailVerificationPending,
+              user: fallbackUser,
             );
           }
-        } else {
-          // If Firestore profile not ready yet
-          final fallbackUser = UserModel(
-            uid: firebaseUser.uid,
-            fullName: firebaseUser.displayName ?? '',
-            email: firebaseUser.email ?? '',
-            phoneNumber: firebaseUser.phoneNumber ?? '',
-            role: 'Donor',
-            createdAt: DateTime.now(),
-            isEmailVerified: firebaseUser.emailVerified,
-          );
+        } catch (e, st) {
+          AppLogger.e('AUTH_PROVIDER: Error in auth state listener', e, st);
           state = state.copyWith(
-            status: firebaseUser.emailVerified
-                ? AuthStatus.authenticated
-                : AuthStatus.emailVerificationPending,
-            user: fallbackUser,
+            status: AuthStatus.unauthenticated,
+            errorMessage: 'Failed to load profile. Please try again.',
           );
         }
       }
@@ -104,7 +117,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String phoneNumber,
     required String role,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     final result = await _authRepository.signUpWithEmail(
       fullName: fullName,
@@ -132,7 +149,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     final result = await _authRepository.signInWithEmail(
       email: email,
@@ -162,7 +183,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> sendPasswordReset({required String email}) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     final result = await _authRepository.sendPasswordResetEmail(email: email);
 
@@ -193,7 +218,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> checkVerificationStatus() async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
     final result = await _authRepository.checkEmailVerified();
 
     if (result is ApiSuccess<bool>) {
@@ -231,7 +260,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final currentUser = state.user;
     if (currentUser == null) return;
 
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
 
     final result = await _authRepository.updateUserProfile(
       uid: currentUser.uid,
@@ -248,14 +281,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     } else if (result is ApiFailure<UserModel>) {
       state = state.copyWith(
-        status: AuthStatus.authenticated, // Maintain user session on error
+        status: AuthStatus.authenticated,
         errorMessage: result.failure.message,
       );
     }
   }
 
   Future<void> logout() async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      errorMessage: null,
+      infoMessage: null,
+    );
     final result = await _authRepository.signOut();
     if (result is ApiSuccess<void>) {
       state = state.copyWith(

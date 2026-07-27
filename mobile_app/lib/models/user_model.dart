@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 class UserModel extends Equatable {
@@ -9,6 +10,7 @@ class UserModel extends Equatable {
   final String verificationStatus; // pending, verified, rejected
   final String accountStatus; // PENDING_ONBOARDING, PENDING_VERIFICATION, ACTIVE, SUSPENDED
   final DateTime createdAt;
+  final DateTime? updatedAt;
   final bool isEmailVerified;
   final String? photoUrl;
   final String? fcmToken;
@@ -22,11 +24,14 @@ class UserModel extends Equatable {
     this.verificationStatus = 'pending',
     this.accountStatus = 'ACTIVE',
     required this.createdAt,
+    this.updatedAt,
     this.isEmailVerified = false,
     this.photoUrl,
     this.fcmToken,
   });
 
+  /// Convert to Firestore map for document creation.
+  /// Uses FieldValue.serverTimestamp() for createdAt and updatedAt.
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
@@ -36,10 +41,23 @@ class UserModel extends Equatable {
       'role': role,
       'verificationStatus': verificationStatus,
       'accountStatus': accountStatus,
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
       'isEmailVerified': isEmailVerified,
       'photoUrl': photoUrl,
       'fcmToken': fcmToken,
+    };
+  }
+
+  /// Convert to Firestore map for document updates.
+  /// Only includes updatedAt as server timestamp.
+  Map<String, dynamic> toUpdateMap() {
+    return {
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'updatedAt': FieldValue.serverTimestamp(),
+      if (photoUrl != null) 'photoUrl': photoUrl,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 
@@ -52,13 +70,23 @@ class UserModel extends Equatable {
       role: map['role'] as String? ?? 'Donor',
       verificationStatus: map['verificationStatus'] as String? ?? 'pending',
       accountStatus: map['accountStatus'] as String? ?? 'ACTIVE',
-      createdAt: map['createdAt'] != null
-          ? DateTime.tryParse(map['createdAt'] as String) ?? DateTime.now()
-          : DateTime.now(),
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt: map['updatedAt'] != null ? _parseDateTime(map['updatedAt']) : null,
       isEmailVerified: map['isEmailVerified'] as bool? ?? false,
       photoUrl: map['photoUrl'] as String?,
       fcmToken: map['fcmToken'] as String?,
     );
+  }
+
+  /// Parse DateTime from various Firestore formats:
+  /// - Firestore Timestamp object
+  /// - ISO 8601 string
+  /// - Fallback to DateTime.now()
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
   }
 
   UserModel copyWith({
@@ -70,6 +98,7 @@ class UserModel extends Equatable {
     String? verificationStatus,
     String? accountStatus,
     DateTime? createdAt,
+    DateTime? updatedAt,
     bool? isEmailVerified,
     String? photoUrl,
     String? fcmToken,
@@ -83,6 +112,7 @@ class UserModel extends Equatable {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       accountStatus: accountStatus ?? this.accountStatus,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       photoUrl: photoUrl ?? this.photoUrl,
       fcmToken: fcmToken ?? this.fcmToken,
@@ -99,6 +129,7 @@ class UserModel extends Equatable {
         verificationStatus,
         accountStatus,
         createdAt,
+        updatedAt,
         isEmailVerified,
         photoUrl,
         fcmToken,

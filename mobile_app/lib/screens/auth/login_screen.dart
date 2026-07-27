@@ -7,6 +7,7 @@ import 'package:mobile_app/routes/app_router.dart';
 import 'package:mobile_app/utils/validators.dart';
 import 'package:mobile_app/widgets/custom_button.dart';
 import 'package:mobile_app/widgets/custom_text_field.dart';
+import 'package:mobile_app/widgets/glass_card.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -44,6 +45,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           SnackBar(
             content: Text(next.errorMessage!),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       } else if (next.status == AuthStatus.authenticated) {
@@ -65,75 +68,106 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Login'),
+        title: const Text(
+          'Login',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 16),
-                const Text(
-                  'Welcome Back!',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Log in to continue serving communities.',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 32),
-                CustomTextField(
-                  label: 'Email Address',
-                  hint: 'name@example.com',
-                  controller: _emailController,
-                  validator: Validators.validateEmail,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
-                  enabled: !isLoading,
-                ),
-                const SizedBox(height: 18),
-                CustomTextField(
-                  label: 'Password',
-                  hint: '••••••••',
-                  controller: _passwordController,
-                  validator: Validators.validatePassword,
-                  isPassword: true,
-                  prefixIcon: Icons.lock_outline,
-                  textInputAction: TextInputAction.done,
-                  enabled: !isLoading,
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            Navigator.of(context).pushNamed(AppRouter.forgotPasswordRoute);
-                          },
-                    child: const Text(
-                      'Forgot Password?',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGlow,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      size: 48,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                CustomButton(
-                  text: 'Log In',
-                  isLoading: isLoading,
-                  onPressed: _submitLogin,
+                const SizedBox(height: 16),
+                const Center(
+                  child: Text(
+                    'Welcome Back!',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 6),
+                const Center(
+                  child: Text(
+                    'Log in to continue serving communities.',
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                GlassCard(
+                  padding: const EdgeInsets.all(20),
+                  borderRadius: 24,
+                  child: Column(
+                    children: [
+                      CustomTextField(
+                        label: 'Email Address',
+                        hint: 'name@example.com',
+                        controller: _emailController,
+                        validator: Validators.validateEmail,
+                        keyboardType: TextInputType.emailAddress,
+                        prefixIcon: Icons.email_outlined,
+                        enabled: !isLoading,
+                      ),
+                      const SizedBox(height: 18),
+                      CustomTextField(
+                        label: 'Password',
+                        hint: '••••••••',
+                        controller: _passwordController,
+                        validator: Validators.validatePassword,
+                        isPassword: true,
+                        prefixIcon: Icons.lock_outline,
+                        textInputAction: TextInputAction.done,
+                        enabled: !isLoading,
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: isLoading
+                              ? null
+                              : () {
+                                  Navigator.of(context).pushNamed(AppRouter.forgotPasswordRoute);
+                                },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      CustomButton(
+                        text: 'Log In',
+                        isLoading: isLoading,
+                        onPressed: _submitLogin,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

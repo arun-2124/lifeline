@@ -33,39 +33,46 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.expireDonations = exports.aiClassifyFood = exports.processImages = exports.cancelDonation = exports.updateDonation = exports.createDonation = exports.checkAccountStatus = exports.validateProfile = exports.onUserDeleted = exports.onUserCreated = void 0;
+exports.scheduledDailyAnalytics = exports.scheduledCleanupNotifications = exports.scheduledExpireDonations = exports.aiClassifyFood = exports.processImages = exports.onDeliveryStatusChanged = exports.onDeliveryAssigned = exports.onDonationAccepted = exports.onDonationCreated = exports.cancelDonation = exports.updateDonation = exports.createDonation = exports.checkAccountStatus = exports.validateProfile = exports.handleUserDeleted = exports.handleUserCreated = void 0;
 const admin = __importStar(require("firebase-admin"));
-const functions = __importStar(require("firebase-functions/v1"));
-// Initialize Firebase Admin SDK (once)
-admin.initializeApp();
-// ── Sprint 2: Auth Functions ──────────────────────────────────────────────────
-const onUserCreated_1 = require("./triggers/onUserCreated");
-const onUserDeleted_1 = require("./triggers/onUserDeleted");
-exports.onUserCreated = functions.auth.user().onCreate(async (user) => {
-    await (0, onUserCreated_1.handleUserCreated)(user);
-});
-exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
-    await (0, onUserDeleted_1.handleUserDeleted)(user);
-});
-// ── Sprint 2: Auth Callables ──────────────────────────────────────────────────
+// Initialize Firebase Admin SDK singleton
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
+// ── Auth Triggers ─────────────────────────────────────────────────────────────
+var onUserCreated_1 = require("./triggers/onUserCreated");
+Object.defineProperty(exports, "handleUserCreated", { enumerable: true, get: function () { return onUserCreated_1.handleUserCreated; } });
+var onUserDeleted_1 = require("./triggers/onUserDeleted");
+Object.defineProperty(exports, "handleUserDeleted", { enumerable: true, get: function () { return onUserDeleted_1.handleUserDeleted; } });
+// ── Auth Callables ────────────────────────────────────────────────────────────
 var validateProfile_1 = require("./callables/validateProfile");
 Object.defineProperty(exports, "validateProfile", { enumerable: true, get: function () { return validateProfile_1.validateProfile; } });
 var checkAccountStatus_1 = require("./callables/checkAccountStatus");
 Object.defineProperty(exports, "checkAccountStatus", { enumerable: true, get: function () { return checkAccountStatus_1.checkAccountStatus; } });
-// ── Sprint 3: Donation Callables ──────────────────────────────────────────────
+// ── Donation Callables ────────────────────────────────────────────────────────
 var createDonation_1 = require("./callables/createDonation");
 Object.defineProperty(exports, "createDonation", { enumerable: true, get: function () { return createDonation_1.createDonation; } });
 var updateDonation_1 = require("./callables/updateDonation");
 Object.defineProperty(exports, "updateDonation", { enumerable: true, get: function () { return updateDonation_1.updateDonation; } });
 var cancelDonation_1 = require("./callables/cancelDonation");
 Object.defineProperty(exports, "cancelDonation", { enumerable: true, get: function () { return cancelDonation_1.cancelDonation; } });
-// ── Sprint 3: Storage Trigger ─────────────────────────────────────────────────
+// ── Event Triggers (Donation, NGO, Volunteer, Delivery) ──────────────────────
+var onDonationCreated_1 = require("./triggers/onDonationCreated");
+Object.defineProperty(exports, "onDonationCreated", { enumerable: true, get: function () { return onDonationCreated_1.onDonationCreated; } });
+var onDonationAccepted_1 = require("./triggers/onDonationAccepted");
+Object.defineProperty(exports, "onDonationAccepted", { enumerable: true, get: function () { return onDonationAccepted_1.onDonationAccepted; } });
+var onDeliveryAssigned_1 = require("./triggers/onDeliveryAssigned");
+Object.defineProperty(exports, "onDeliveryAssigned", { enumerable: true, get: function () { return onDeliveryAssigned_1.onDeliveryAssigned; } });
+var onDeliveryStatusChanged_1 = require("./triggers/onDeliveryStatusChanged");
+Object.defineProperty(exports, "onDeliveryStatusChanged", { enumerable: true, get: function () { return onDeliveryStatusChanged_1.onDeliveryStatusChanged; } });
+// ── Storage & AI Triggers ─────────────────────────────────────────────────────
 var processImages_1 = require("./triggers/processImages");
 Object.defineProperty(exports, "processImages", { enumerable: true, get: function () { return processImages_1.processImages; } });
-// ── Sprint 3: PubSub Trigger ──────────────────────────────────────────────────
 var aiClassifyFood_1 = require("./triggers/aiClassifyFood");
 Object.defineProperty(exports, "aiClassifyFood", { enumerable: true, get: function () { return aiClassifyFood_1.aiClassifyFood; } });
-// ── Sprint 3: Scheduled Function ──────────────────────────────────────────────
-var expireDonations_1 = require("./triggers/expireDonations");
-Object.defineProperty(exports, "expireDonations", { enumerable: true, get: function () { return expireDonations_1.expireDonations; } });
+// ── Scheduled Cron Functions ──────────────────────────────────────────────────
+var scheduledTasks_1 = require("./triggers/scheduledTasks");
+Object.defineProperty(exports, "scheduledExpireDonations", { enumerable: true, get: function () { return scheduledTasks_1.scheduledExpireDonations; } });
+Object.defineProperty(exports, "scheduledCleanupNotifications", { enumerable: true, get: function () { return scheduledTasks_1.scheduledCleanupNotifications; } });
+Object.defineProperty(exports, "scheduledDailyAnalytics", { enumerable: true, get: function () { return scheduledTasks_1.scheduledDailyAnalytics; } });
 //# sourceMappingURL=index.js.map

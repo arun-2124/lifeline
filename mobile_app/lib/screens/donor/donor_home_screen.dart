@@ -8,7 +8,9 @@ import 'package:mobile_app/widgets/app_drawer_widget.dart';
 import 'package:mobile_app/widgets/dashboard_header_widget.dart';
 import 'package:mobile_app/widgets/donation_card_widget.dart';
 import 'package:mobile_app/widgets/feature_card_widget.dart';
+import 'package:mobile_app/widgets/glass_card.dart';
 import 'package:mobile_app/widgets/profile_summary_card.dart';
+import 'package:mobile_app/widgets/shimmer_skeleton.dart';
 
 class DonorHomeScreen extends ConsumerStatefulWidget {
   const DonorHomeScreen({super.key});
@@ -22,11 +24,15 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = ref.read(authNotifierProvider).user;
-      if (user != null) {
-        ref.read(donationNotifierProvider.notifier).loadDonorDonations(user.uid);
-      }
+      _fetchDonations();
     });
+  }
+
+  Future<void> _fetchDonations() async {
+    final user = ref.read(authNotifierProvider).user;
+    if (user != null) {
+      await ref.read(donationNotifierProvider.notifier).loadDonorDonations(user.uid);
+    }
   }
 
   @override
@@ -48,11 +54,14 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Donor Portal'),
+        title: const Text(
+          'Donor Portal',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.list_alt),
+            icon: const Icon(Icons.history_rounded),
             tooltip: 'My Donations',
             onPressed: () {
               Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
@@ -62,126 +71,150 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
       ),
       drawer: AppDrawerWidget(user: user),
       body: user == null
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          ? const Padding(
+              padding: EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DashboardHeaderWidget(user: user),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ProfileSummaryCard(user: user),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _StatCard(
-                                title: 'Total Donations',
-                                value: '${donations.length}',
-                                icon: Icons.volunteer_activism_outlined,
-                                color: AppColors.primary,
+                  ShimmerSkeleton(width: double.infinity, height: 120),
+                  SizedBox(height: 16),
+                  ShimmerSkeleton(width: double.infinity, height: 180),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _fetchDonations,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DashboardHeaderWidget(user: user),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProfileSummaryCard(user: user),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _StatCard(
+                                  title: 'Total Donations',
+                                  value: '${donations.length}',
+                                  icon: Icons.volunteer_activism_outlined,
+                                  color: AppColors.primary,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _StatCard(
-                                title: 'Meals Served',
-                                value: '$totalMeals',
-                                icon: Icons.restaurant,
-                                color: AppColors.success,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StatCard(
+                                  title: 'Meals Served',
+                                  value: '$totalMeals',
+                                  icon: Icons.restaurant_menu_rounded,
+                                  color: AppColors.success,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _StatCard(
-                                title: 'Active',
-                                value: '$activeCount',
-                                icon: Icons.pending_actions,
-                                color: AppColors.warning,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _StatCard(
+                                  title: 'Active',
+                                  value: '$activeCount',
+                                  icon: Icons.pending_actions_rounded,
+                                  color: AppColors.warning,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Quick Actions',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
+                                },
+                                child: const Text(
+                                  'View All',
+                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          FeatureCardWidget(
+                            title: 'Create Food Donation',
+                            description: 'List surplus cooked meals, fresh produce, or bakery items.',
+                            icon: Icons.add_circle_outline_rounded,
+                            iconColor: AppColors.primary,
+                            tag: 'Live Module',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.createDonationRoute);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          FeatureCardWidget(
+                            title: 'My Donations List',
+                            description: 'Track pickup lifecycle, QR code verification, and status updates.',
+                            icon: Icons.history_rounded,
+                            iconColor: AppColors.success,
+                            tag: 'Live Module',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          if (donations.isNotEmpty) ...[
                             const Text(
-                              'Donor Actions',
+                              'Recent Activity',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimary,
+                                letterSpacing: 0.3,
                               ),
                             ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
-                              },
-                              child: const Text('View All'),
-                            ),
+                            const SizedBox(height: 12),
+                            ...donations.take(3).map((d) => DonationCardWidget(
+                                  donation: d,
+                                  onTap: () {
+                                    ref
+                                        .read(donationNotifierProvider.notifier)
+                                        .selectDonation(d);
+                                    Navigator.of(context)
+                                        .pushNamed(AppRouter.donationDetailsRoute);
+                                  },
+                                )),
                           ],
-                        ),
-                        const SizedBox(height: 8),
-                        FeatureCardWidget(
-                          title: 'Create Food Donation',
-                          description: 'List surplus cooked meals, fresh produce, or bakery items.',
-                          icon: Icons.add_circle_outline,
-                          iconColor: AppColors.primary,
-                          tag: 'Live Module',
-                          onTap: () {
-                            Navigator.of(context).pushNamed(AppRouter.createDonationRoute);
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        FeatureCardWidget(
-                          title: 'My Donations List',
-                          description: 'Track pickup lifecycle, QR code verification, and status updates.',
-                          icon: Icons.history,
-                          iconColor: AppColors.success,
-                          tag: 'Live Module',
-                          onTap: () {
-                            Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        if (donations.isNotEmpty) ...[
-                          const Text(
-                            'Recent Donations',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ...donations.take(3).map((d) => DonationCardWidget(
-                                donation: d,
-                                onTap: () {
-                                  ref
-                                      .read(donationNotifierProvider.notifier)
-                                      .selectDonation(d);
-                                  Navigator.of(context)
-                                      .pushNamed(AppRouter.donationDetailsRoute);
-                                },
-                              )),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
+        elevation: 6,
+        highlightElevation: 12,
         backgroundColor: AppColors.primary,
         onPressed: () {
           Navigator.of(context).pushNamed(AppRouter.createDonationRoute);
         },
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Donate Food', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+        label: const Text(
+          'Donate Food',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
     );
   }
@@ -202,32 +235,33 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE9ECEF)),
-      ),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+      borderRadius: 16,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

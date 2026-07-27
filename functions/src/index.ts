@@ -1,41 +1,36 @@
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions/v1';
 
-// Initialize Firebase Admin SDK (once)
-admin.initializeApp();
+// Initialize Firebase Admin SDK singleton
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-// ── Sprint 2: Auth Functions ──────────────────────────────────────────────────
+// ── Auth Triggers ─────────────────────────────────────────────────────────────
+export { handleUserCreated } from './triggers/onUserCreated';
+export { handleUserDeleted } from './triggers/onUserDeleted';
 
-import { handleUserCreated } from './triggers/onUserCreated';
-import { handleUserDeleted } from './triggers/onUserDeleted';
-
-export const onUserCreated = functions.auth.user().onCreate(async (user) => {
-  await handleUserCreated(user);
-});
-
-export const onUserDeleted = functions.auth.user().onDelete(async (user) => {
-  await handleUserDeleted(user);
-});
-
-// ── Sprint 2: Auth Callables ──────────────────────────────────────────────────
-
+// ── Auth Callables ────────────────────────────────────────────────────────────
 export { validateProfile } from './callables/validateProfile';
 export { checkAccountStatus } from './callables/checkAccountStatus';
 
-// ── Sprint 3: Donation Callables ──────────────────────────────────────────────
-
+// ── Donation Callables ────────────────────────────────────────────────────────
 export { createDonation } from './callables/createDonation';
 export { updateDonation } from './callables/updateDonation';
 export { cancelDonation } from './callables/cancelDonation';
 
-// ── Sprint 3: Storage Trigger ─────────────────────────────────────────────────
+// ── Event Triggers (Donation, NGO, Volunteer, Delivery) ──────────────────────
+export { onDonationCreated } from './triggers/onDonationCreated';
+export { onDonationAccepted } from './triggers/onDonationAccepted';
+export { onDeliveryAssigned } from './triggers/onDeliveryAssigned';
+export { onDeliveryStatusChanged } from './triggers/onDeliveryStatusChanged';
 
+// ── Storage & AI Triggers ─────────────────────────────────────────────────────
 export { processImages } from './triggers/processImages';
-
-// ── Sprint 3: PubSub Trigger ──────────────────────────────────────────────────
-
 export { aiClassifyFood } from './triggers/aiClassifyFood';
 
-// ── Sprint 3: Scheduled Function ──────────────────────────────────────────────
-
-export { expireDonations } from './triggers/expireDonations';
+// ── Scheduled Cron Functions ──────────────────────────────────────────────────
+export {
+  scheduledExpireDonations,
+  scheduledCleanupNotifications,
+  scheduledDailyAnalytics,
+} from './triggers/scheduledTasks';

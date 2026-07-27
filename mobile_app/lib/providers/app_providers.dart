@@ -13,6 +13,7 @@ import 'package:mobile_app/services/firebase_auth_service.dart';
 import 'package:mobile_app/services/firestore_service.dart';
 import 'package:mobile_app/services/firebase_storage_service.dart';
 import 'package:mobile_app/services/fcm_notification_service.dart';
+import 'package:mobile_app/services/ai_service.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
 import 'package:mobile_app/providers/donation_provider.dart';
 import 'package:mobile_app/providers/ngo_provider.dart';
@@ -33,6 +34,10 @@ final firebaseStorageServiceProvider = Provider<FirebaseStorageService>((ref) {
 
 final fcmNotificationServiceProvider = Provider<FcmNotificationService>((ref) {
   return FcmNotificationServiceImpl();
+});
+
+final aiServiceProvider = Provider<AiService>((ref) {
+  return AiServiceImpl();
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
