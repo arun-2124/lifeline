@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:mobile_app/core/constants/app_strings.dart';
 import 'package:mobile_app/core/services/navigation_service.dart';
-import 'package:mobile_app/core/theme/app_theme.dart';
+import 'package:mobile_app/config/app_theme.dart';
 import 'package:mobile_app/firebase_options.dart';
 import 'package:mobile_app/routes/app_router.dart';
 import 'package:mobile_app/utils/app_logger.dart';
@@ -19,17 +19,29 @@ void main() async {
     );
     AppLogger.i('Firebase initialized successfully for Lifeline.');
 
-    if (kDebugMode) {
-      await FirebaseAppCheck.instance.activate(
-        // ignore: deprecated_member_use
-        androidProvider: AndroidProvider.debug,
-        // ignore: deprecated_member_use
-        appleProvider: AppleProvider.debug,
-      );
-      AppLogger.i('Firebase App Check activated in Debug mode.');
+    try {
+      if (kDebugMode) {
+        await FirebaseAppCheck.instance.activate(
+          // ignore: deprecated_member_use
+          androidProvider: AndroidProvider.debug,
+          // ignore: deprecated_member_use
+          appleProvider: AppleProvider.debug,
+        );
+        AppLogger.i('Firebase App Check activated in Debug mode.');
+      } else {
+        await FirebaseAppCheck.instance.activate(
+          // ignore: deprecated_member_use
+          androidProvider: AndroidProvider.playIntegrity,
+          // ignore: deprecated_member_use
+          appleProvider: AppleProvider.deviceCheck,
+        );
+        AppLogger.i('Firebase App Check activated in Production mode (Play Integrity / DeviceCheck).');
+      }
+    } catch (appCheckError) {
+      AppLogger.e('App Check activation deferred (Network/Provider fallback active)', appCheckError);
     }
   } catch (e, st) {
-    AppLogger.e('Failed to initialize Firebase / App Check', e, st);
+    AppLogger.e('Failed to initialize Firebase Core', e, st);
   }
 
   runApp(
@@ -48,6 +60,8 @@ class LifelineApp extends StatelessWidget {
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
       navigatorKey: NavigationService.navigatorKey,
       initialRoute: AppRouter.splashRoute,
       onGenerateRoute: AppRouter.generateRoute,
