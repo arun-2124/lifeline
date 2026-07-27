@@ -9,6 +9,7 @@ import 'package:mobile_app/widgets/dashboard_header_widget.dart';
 import 'package:mobile_app/widgets/donation_card_widget.dart';
 import 'package:mobile_app/widgets/feature_card_widget.dart';
 import 'package:mobile_app/widgets/glass_card.dart';
+import 'package:mobile_app/widgets/monetary_donation_dialog.dart';
 import 'package:mobile_app/widgets/profile_summary_card.dart';
 import 'package:mobile_app/widgets/shimmer_skeleton.dart';
 
@@ -32,6 +33,7 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
     final user = ref.read(authNotifierProvider).user;
     if (user != null) {
       await ref.read(donationNotifierProvider.notifier).loadDonorDonations(user.uid);
+      await ref.read(donationNotifierProvider.notifier).loadTotalFunds();
     }
   }
 
@@ -40,6 +42,7 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
     final user = ref.watch(authNotifierProvider).user;
     final donationState = ref.watch(donationNotifierProvider);
     final donations = donationState.donations;
+    final totalFunds = donationState.totalFundsRaised;
 
     final activeCount = donations
         .where((d) => ['pending', 'published', 'matched', 'accepted', 'picked up']
@@ -127,6 +130,97 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 20),
+
+                          // 💸 Total Donated Funds Display & Cash Contribution Banner Card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.heroGradient,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.secondary.withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryGlow,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.stars_rounded, color: AppColors.primary, size: 14),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'Community Relief Fund',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.verified_user_rounded, color: Colors.white54, size: 20),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  '₹${totalFunds.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                const Text(
+                                  'Total Funds Raised to Feed Underprivileged Communities',
+                                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 46,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      elevation: 4,
+                                    ),
+                                    onPressed: () {
+                                      MonetaryDonationDialog.show(context);
+                                    },
+                                    icon: const Icon(Icons.payments_rounded, color: Colors.white, size: 18),
+                                    label: const Text(
+                                      'Donate Money Now',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
                           const SizedBox(height: 24),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
