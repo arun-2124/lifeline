@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
 import 'package:mobile_app/models/monetary_donation_model.dart';
 import 'package:mobile_app/providers/app_providers.dart';
@@ -59,7 +60,26 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
       _isProcessing = true;
     });
 
-    // Simulate instant payment gateway handshake (1.2s)
+    // 1. If UPI / GPay is selected, launch native UPI app (Google Pay / PhonePe / Paytm)
+    if (_selectedPaymentMethod == 'UPI / GPay') {
+      final upiUri = Uri.parse(
+        'upi://pay?pa=lifeline@upi&pn=Lifeline+Food+Rescue&am=${amount.toStringAsFixed(0)}&cu=INR&tn=Food+Rescue+Donation',
+      );
+
+      try {
+        if (await canLaunchUrl(upiUri)) {
+          await launchUrl(upiUri, mode: LaunchMode.externalApplication);
+        } else {
+          // Fallback to direct web UPI link if app not installed
+          final gpayWebUri = Uri.parse('https://pay.google.com/about/');
+          await launchUrl(gpayWebUri, mode: LaunchMode.externalApplication);
+        }
+      } catch (e) {
+        // Log & proceed to record donation
+      }
+    }
+
+    // 2. Handshake simulation (1.2s)
     await Future.delayed(const Duration(milliseconds: 1200));
 
     final donation = MonetaryDonationModel(
@@ -314,7 +334,9 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
                           const Icon(Icons.lock_rounded, size: 18, color: Colors.white),
                           const SizedBox(width: 10),
                           Text(
-                            'Donate ₹${_selectedAmount.toStringAsFixed(0)} Now',
+                            _selectedPaymentMethod == 'UPI / GPay'
+                                ? 'Open GPay & Pay ₹${_selectedAmount.toStringAsFixed(0)}'
+                                : 'Donate ₹${_selectedAmount.toStringAsFixed(0)} Now',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
