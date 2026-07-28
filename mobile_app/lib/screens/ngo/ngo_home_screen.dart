@@ -78,6 +78,13 @@ class _NgoHomeScreenState extends ConsumerState<NgoHomeScreen> {
         title: const Text('NGO Portal'),
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_business_rounded),
+            tooltip: 'Register NGO Organization',
+            onPressed: () {
+              Navigator.of(context).pushNamed(AppRouter.ngoRegistrationRoute);
+            },
+          ),
           Stack(
             children: [
               IconButton(

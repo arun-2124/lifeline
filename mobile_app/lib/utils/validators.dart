@@ -20,13 +20,14 @@ class Validators {
     return null;
   }
 
+  /// Strictly enforces a 10-digit phone number.
   static String? validatePhoneNumber(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Phone number is required.';
     }
-    final phoneRegExp = RegExp(r'^\+?[0-9]{10,14}$');
-    if (!phoneRegExp.hasMatch(value.trim().replaceAll(' ', ''))) {
-      return 'Please enter a valid 10-digit phone number.';
+    final cleanPhone = value.trim().replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanPhone.length != 10) {
+      return 'Phone number must be exactly 10 digits.';
     }
     return null;
   }

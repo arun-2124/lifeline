@@ -24,16 +24,42 @@ class MonetaryDonationDialog extends ConsumerStatefulWidget {
 class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog> {
   final _amountController = TextEditingController(text: '25');
   final _messageController = TextEditingController();
+  
+  // Card Fields
+  final _cardNumberController = TextEditingController();
+  final _expiryController = TextEditingController();
+  final _cvvController = TextEditingController();
+  final _cardHolderController = TextEditingController();
+
+  // NetBanking Field
+  String _selectedBank = 'State Bank of India (SBI)';
+
+  // UPI Field
+  final _upiIdController = TextEditingController(text: 'lifeline@upi');
+
   double _selectedAmount = 25.0;
   String _selectedPaymentMethod = 'UPI / GPay';
   bool _isProcessing = false;
 
   final List<double> _presetAmounts = [10, 25, 50, 100, 250];
+  final List<String> _popularBanks = [
+    'State Bank of India (SBI)',
+    'HDFC Bank',
+    'ICICI Bank',
+    'Axis Bank',
+    'Kotak Mahindra Bank',
+    'Punjab National Bank',
+  ];
 
   @override
   void dispose() {
     _amountController.dispose();
     _messageController.dispose();
+    _cardNumberController.dispose();
+    _expiryController.dispose();
+    _cvvController.dispose();
+    _cardHolderController.dispose();
+    _upiIdController.dispose();
     super.dispose();
   }
 
@@ -56,30 +82,37 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
       return;
     }
 
+    if (_selectedPaymentMethod == 'Card' && _cardNumberController.text.trim().length < 12) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 16-digit Card Number.')),
+      );
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
     });
 
     // 1. If UPI / GPay is selected, launch native UPI app (Google Pay / PhonePe / Paytm)
     if (_selectedPaymentMethod == 'UPI / GPay') {
+      final upiId = _upiIdController.text.trim().isNotEmpty ? _upiIdController.text.trim() : 'lifeline@upi';
       final upiUri = Uri.parse(
-        'upi://pay?pa=lifeline@upi&pn=Lifeline+Food+Rescue&am=${amount.toStringAsFixed(0)}&cu=INR&tn=Food+Rescue+Donation',
+        'upi://pay?pa=$upiId&pn=Lifeline+Food+Rescue&am=${amount.toStringAsFixed(0)}&cu=INR&tn=Food+Rescue+Donation',
       );
 
       try {
         if (await canLaunchUrl(upiUri)) {
           await launchUrl(upiUri, mode: LaunchMode.externalApplication);
         } else {
-          // Fallback to direct web UPI link if app not installed
           final gpayWebUri = Uri.parse('https://pay.google.com/about/');
           await launchUrl(gpayWebUri, mode: LaunchMode.externalApplication);
         }
       } catch (e) {
-        // Log & proceed to record donation
+        // Fallback
       }
     }
 
-    // 2. Handshake simulation (1.2s)
+    // 2. Simulate payment processing handshake (1.2s)
     await Future.delayed(const Duration(milliseconds: 1200));
 
     final donation = MonetaryDonationModel(
@@ -116,7 +149,7 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Thank you! ₹${amount.toStringAsFixed(0)} donated successfully! ❤️',
+                    'Thank you! ₹${amount.toStringAsFixed(0)} donated via $_selectedPaymentMethod! ❤️',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -306,6 +339,105 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
                 ),
               ],
             ),
+
+            const SizedBox(height: 16),
+
+            // Dynamic Inputs depending on selected method
+            if (_selectedPaymentMethod == 'UPI / GPay') ...[
+              TextField(
+                controller: _upiIdController,
+                decoration: InputDecoration(
+                  labelText: 'VPA / UPI ID',
+                  hintText: 'yourname@okaxis / upi',
+                  prefixIcon: const Icon(Icons.qr_code_2_rounded, color: AppColors.primary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ] else if (_selectedPaymentMethod == 'Card') ...[
+              TextField(
+                controller: _cardNumberController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Card Number',
+                  hintText: '4532 •••• •••• 8921',
+                  prefixIcon: const Icon(Icons.credit_card_rounded, color: AppColors.primary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _expiryController,
+                      keyboardType: TextInputType.datetime,
+                      decoration: InputDecoration(
+                        labelText: 'Expiry',
+                        hintText: 'MM/YY',
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _cvvController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'CVV',
+                        hintText: '•••',
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (_selectedPaymentMethod == 'NetBanking') ...[
+              DropdownButtonFormField<String>(
+                initialValue: _selectedBank,
+                decoration: InputDecoration(
+                  labelText: 'Select Bank',
+                  prefixIcon: const Icon(Icons.account_balance_rounded, color: AppColors.primary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: _popularBanks.map((bank) {
+                  return DropdownMenuItem(
+                    value: bank,
+                    child: Text(bank, style: const TextStyle(fontSize: 13)),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedBank = val);
+                },
+              ),
+            ],
+
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -336,7 +468,7 @@ class _MonetaryDonationDialogState extends ConsumerState<MonetaryDonationDialog>
                           Text(
                             _selectedPaymentMethod == 'UPI / GPay'
                                 ? 'Open GPay & Pay ₹${_selectedAmount.toStringAsFixed(0)}'
-                                : 'Donate ₹${_selectedAmount.toStringAsFixed(0)} Now',
+                                : 'Pay ₹${_selectedAmount.toStringAsFixed(0)} with $_selectedPaymentMethod',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

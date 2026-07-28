@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
 import 'package:mobile_app/providers/app_providers.dart';
+import 'package:mobile_app/routes/app_router.dart';
 import 'package:mobile_app/widgets/app_drawer_widget.dart';
 import 'package:mobile_app/widgets/dashboard_header_widget.dart';
 import 'package:mobile_app/widgets/feature_card_widget.dart';
@@ -17,7 +18,10 @@ class AdminHomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Admin Console'),
+        title: const Text(
+          'Admin Console',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
         elevation: 0,
       ),
       drawer: AppDrawerWidget(user: user),
@@ -45,13 +49,23 @@ class AdminHomeScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         FeatureCardWidget(
                           title: 'User Verification Requests',
-                          description: 'Approve NGO registrations and food safety credentials.',
-                          icon: Icons.verified_user_outlined,
-                          iconColor: Colors.purple,
+                          description: 'Approve NGO registrations, food safety credentials, and volunteer IDs.',
+                          icon: Icons.verified_user_rounded,
+                          iconColor: AppColors.primary,
+                          tag: 'Live Module',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Admin Verification Console coming soon.')),
-                            );
+                            Navigator.of(context).pushNamed(AppRouter.adminVerificationRoute);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        FeatureCardWidget(
+                          title: 'Payout Verification Console',
+                          description: 'Review, approve, or reject Delivery Partner bank & UPI withdrawal requests.',
+                          icon: Icons.payments_rounded,
+                          iconColor: AppColors.success,
+                          tag: 'FinTech Admin',
+                          onTap: () {
+                            Navigator.of(context).pushNamed(AppRouter.adminWithdrawalsRoute);
                           },
                         ),
                         const SizedBox(height: 10),
@@ -59,7 +73,8 @@ class AdminHomeScreen extends ConsumerWidget {
                           title: 'System Analytics & Audit Logs',
                           description: 'Monitor live donations, AI matching performance, and security logs.',
                           icon: Icons.analytics_outlined,
-                          iconColor: AppColors.primary,
+                          iconColor: AppColors.secondary,
+                          tag: 'Live Module',
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Audit Analytics coming soon.')),

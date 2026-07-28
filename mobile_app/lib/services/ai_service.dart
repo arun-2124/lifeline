@@ -8,6 +8,7 @@ abstract class AiService {
   Future<Map<String, dynamic>> predictDemand(Map<String, dynamic> requestData);
   Future<Map<String, dynamic>> detectHotspots(Map<String, dynamic> requestData);
   Future<Map<String, dynamic>> estimateShelfLife(Map<String, dynamic> requestData);
+  Future<Map<String, dynamic>> classifyFoodImage(String imageBase64);
   Future<Map<String, dynamic>> optimizeRoute(Map<String, dynamic> requestData);
   Future<Map<String, dynamic>> calculateSustainabilityScore(Map<String, dynamic> requestData);
   Future<Map<String, dynamic>> calculateCarbonReduction(Map<String, dynamic> requestData);
@@ -63,6 +64,11 @@ class AiServiceImpl implements AiService {
   @override
   Future<Map<String, dynamic>> estimateShelfLife(Map<String, dynamic> requestData) {
     return _post('/shelf-life', requestData);
+  }
+
+  @override
+  Future<Map<String, dynamic>> classifyFoodImage(String imageBase64) {
+    return _post('/custom-vision-inspect', {'image_base64': imageBase64});
   }
 
   @override

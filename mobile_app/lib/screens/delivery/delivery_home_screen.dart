@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
 import 'package:mobile_app/providers/app_providers.dart';
+import 'package:mobile_app/routes/app_router.dart';
 import 'package:mobile_app/widgets/app_drawer_widget.dart';
 import 'package:mobile_app/widgets/dashboard_header_widget.dart';
 import 'package:mobile_app/widgets/feature_card_widget.dart';
@@ -17,7 +18,10 @@ class DeliveryHomeScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Delivery Partner Console'),
+        title: const Text(
+          'Delivery Partner Console',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
         elevation: 0,
       ),
       drawer: AppDrawerWidget(user: user),
@@ -44,26 +48,35 @@ class DeliveryHomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         FeatureCardWidget(
-                          title: 'Assigned Pickups & Deliveries',
-                          description: 'View active route directions and package details.',
-                          icon: Icons.local_shipping_outlined,
+                          title: 'Multi-Stop Route Manager',
+                          description: 'Smart multi-stop pickup & dropoff planner powered by Google OR-Tools AI.',
+                          icon: Icons.alt_route_rounded,
                           iconColor: AppColors.primary,
+                          tag: 'AI Optimized',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Delivery Route Manager coming soon.')),
-                            );
+                            Navigator.of(context).pushNamed(AppRouter.multiStopRouteRoute);
                           },
                         ),
                         const SizedBox(height: 10),
                         FeatureCardWidget(
-                          title: 'Live GPS Navigation',
-                          description: 'Real-time optimized path to donor & recipient locations.',
-                          icon: Icons.navigation_outlined,
+                          title: 'Turn-by-Turn GPS Navigation',
+                          description: 'Real-time 3D driver navigation with live turn directions & Google Maps sync.',
+                          icon: Icons.navigation_rounded,
                           iconColor: Colors.blueAccent,
+                          tag: 'Live GPS',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('GPS Navigation coming soon.')),
-                            );
+                            Navigator.of(context).pushNamed(AppRouter.turnByTurnNavigationRoute);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        FeatureCardWidget(
+                          title: 'Earnings & Wallet Dashboard',
+                          description: 'View balance, payment breakdown (Base, Distance, Peak, Carbon, Tip), and request payouts.',
+                          icon: Icons.account_balance_wallet_rounded,
+                          iconColor: AppColors.success,
+                          tag: 'FinTech Wallet',
+                          onTap: () {
+                            Navigator.of(context).pushNamed(AppRouter.deliveryWalletRoute);
                           },
                         ),
                       ],

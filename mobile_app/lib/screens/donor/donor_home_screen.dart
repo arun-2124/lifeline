@@ -258,13 +258,46 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
                           ),
                           const SizedBox(height: 12),
                           FeatureCardWidget(
-                            title: 'My Donations List',
-                            description: 'Track pickup lifecycle, QR code verification, and status updates.',
-                            icon: Icons.history_rounded,
+                            title: 'Community Food Sharing Feed',
+                            description: 'Share home-cooked meals with neighbors & local community members with Food Safety verification.',
+                            icon: Icons.soup_kitchen_rounded,
                             iconColor: AppColors.success,
-                            tag: 'Live Module',
+                            tag: 'Community',
                             onTap: () {
-                              Navigator.of(context).pushNamed(AppRouter.myDonationsRoute);
+                              Navigator.of(context).pushNamed(AppRouter.communitySharingFeedRoute);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          FeatureCardWidget(
+                            title: 'Lifeline AI Vision Engine',
+                            description: 'Snap a photo of food to automatically estimate portions and freshness score.',
+                            icon: Icons.linked_camera_rounded,
+                            iconColor: Colors.purple,
+                            tag: 'AI Vision',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.aiFoodInspectorRoute);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          FeatureCardWidget(
+                            title: 'Corporate ESG Certificate',
+                            description: 'Generate downloadable CSR carbon reduction compliance certificates.',
+                            icon: Icons.workspace_premium_rounded,
+                            iconColor: Colors.amber,
+                            tag: 'ESG Certificate',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.esgCertificateRoute);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          FeatureCardWidget(
+                            title: 'Offline Bluetooth Mesh',
+                            description: 'Encrypted QR token verification for zero-connectivity disaster zones.',
+                            icon: Icons.bluetooth_searching_rounded,
+                            iconColor: AppColors.info,
+                            tag: 'Offline Mesh',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.offlineMeshRoute);
                             },
                           ),
                           const SizedBox(height: 24),
