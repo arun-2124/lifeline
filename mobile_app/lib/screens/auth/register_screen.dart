@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
+import 'package:mobile_app/models/user_consent_model.dart';
 import 'package:mobile_app/providers/app_providers.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
 import 'package:mobile_app/routes/app_router.dart';
@@ -26,23 +27,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   String _selectedRole = 'Donor';
 
-  // 7 MANDATORY CHECKBOXES
+  // AGREEMENT CHECKBOXES
   bool _agreeTerms = false;
   bool _agreePrivacy = false;
-  bool _agreeFacilitation = false;
+  bool _agreeCommunity = false;
   bool _agreeFoodSafety = false;
-  bool _agreeNoUnsafeFood = false;
-  bool _agreeViolationSuspension = false;
-  bool _certifyAccurateInfo = false;
 
-  bool get _areAllAgreementsAccepted =>
-      _agreeTerms &&
-      _agreePrivacy &&
-      _agreeFacilitation &&
-      _agreeFoodSafety &&
-      _agreeNoUnsafeFood &&
-      _agreeViolationSuspension &&
-      _certifyAccurateInfo;
+  bool get _requiresFoodSafety {
+    final r = _selectedRole.trim().toLowerCase();
+    return r == 'donor' || r == 'community home cook' || r == 'home cook';
+  }
+
+  bool get _requiresCommunity {
+    final r = _selectedRole.trim().toLowerCase();
+    return r != 'beneficiary' && r != 'admin';
+  }
+
+  bool get _areRoleAgreementsAccepted {
+    if (!_agreeTerms || !_agreePrivacy) return false;
+    if (_requiresCommunity && !_agreeCommunity) return false;
+    if (_requiresFoodSafety && !_agreeFoodSafety) return false;
+    return true;
+  }
 
   @override
   void dispose() {
@@ -55,10 +61,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   void _submitRegister() {
-    if (!_areAllAgreementsAccepted) {
+    if (!_areRoleAgreementsAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please accept all mandatory Terms & Food Safety agreements before registering.'),
+          content: Text('Please accept all mandatory legal & safety agreements for your role.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -105,7 +111,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Create Verified Account'),
+        title: const Text('Create Account'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -125,12 +131,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Enter details and review mandatory food safety guarantees.',
+                  'Fill in your details and accept role-based legal agreements.',
                   style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 20),
 
-                // USER PROFILE FORM
+                // USER PROFILE INPUTS
                 GlassCard(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -206,14 +212,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                // 7 MANDATORY TERMS & FOOD SAFETY CHECKBOXES
+                // ROLE-BASED LEGAL AGREEMENTS (PHASE 2)
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _areAllAgreementsAccepted
+                      color: _areRoleAgreementsAccepted
                           ? AppColors.success.withValues(alpha: 0.5)
                           : AppColors.primary.withValues(alpha: 0.3),
                       width: 1.5,
@@ -222,13 +228,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.gavel_rounded, color: AppColors.primary, size: 20),
-                          SizedBox(width: 8),
+                          const Icon(Icons.gavel_rounded, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 8),
                           Text(
-                            'Mandatory Terms & Food Safety Declaration',
-                            style: TextStyle(
+                            'Legal Compliance for $_selectedRole',
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
@@ -237,41 +243,57 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      _CheckboxTile(
+
+                      // Terms & Conditions v1.0
+                      _LegalCheckboxTile(
                         value: _agreeTerms,
-                        title: 'I agree to the Lifeline Terms & Conditions.',
+                        title: 'I agree to the Lifeline Terms & Conditions v${UserConsentModel.currentTermsVersion}.',
+                        linkText: 'View Terms',
+                        onLinkTap: () {
+                          Navigator.of(context).pushNamed(AppRouter.termsConditionsRoute);
+                        },
                         onChanged: (v) => setState(() => _agreeTerms = v ?? false),
                       ),
-                      _CheckboxTile(
+
+                      // Privacy Policy v1.0
+                      _LegalCheckboxTile(
                         value: _agreePrivacy,
-                        title: 'I agree to the Privacy Policy.',
+                        title: 'I agree to the Lifeline Privacy Policy v${UserConsentModel.currentPrivacyVersion}.',
+                        linkText: 'View Privacy Policy',
+                        onLinkTap: () {
+                          Navigator.of(context).pushNamed(AppRouter.privacyPolicyRoute);
+                        },
                         onChanged: (v) => setState(() => _agreePrivacy = v ?? false),
                       ),
-                      _CheckboxTile(
-                        value: _agreeFacilitation,
-                        title: 'I understand that Lifeline only facilitates food redistribution.',
-                        onChanged: (v) => setState(() => _agreeFacilitation = v ?? false),
-                      ),
-                      _CheckboxTile(
-                        value: _agreeFoodSafety,
-                        title: 'I understand that I am responsible for ensuring the food I donate is safe and suitable for human consumption.',
-                        onChanged: (v) => setState(() => _agreeFoodSafety = v ?? false),
-                      ),
-                      _CheckboxTile(
-                        value: _agreeNoUnsafeFood,
-                        title: 'I agree that expired, spoiled, contaminated, or unsafe food must never be donated.',
-                        onChanged: (v) => setState(() => _agreeNoUnsafeFood = v ?? false),
-                      ),
-                      _CheckboxTile(
-                        value: _agreeViolationSuspension,
-                        title: 'I understand that repeated violations may lead to account suspension.',
-                        onChanged: (v) => setState(() => _agreeViolationSuspension = v ?? false),
-                      ),
-                      _CheckboxTile(
-                        value: _certifyAccurateInfo,
-                        title: 'I certify that all information provided is accurate.',
-                        onChanged: (v) => setState(() => _certifyAccurateInfo = v ?? false),
-                      ),
+
+                      // Community Guidelines (NGO, Volunteer, Delivery, Donor, Home Cook)
+                      if (_requiresCommunity)
+                        _LegalCheckboxTile(
+                          value: _agreeCommunity,
+                          title: 'I agree to uphold Lifeline Community Standards.',
+                          onChanged: (v) => setState(() => _agreeCommunity = v ?? false),
+                        ),
+
+                      // Mandatory Food Safety Agreement (Donor & Home Cook)
+                      if (_requiresFoodSafety) ...[
+                        const Divider(height: 20),
+                        const Row(
+                          children: [
+                            Icon(Icons.restaurant_rounded, color: Colors.deepOrange, size: 18),
+                            SizedBox(width: 6),
+                            Text(
+                              'Mandatory Food Safety Declaration',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        _LegalCheckboxTile(
+                          value: _agreeFoodSafety,
+                          title: 'I certify that all food I share is freshly prepared, hygienically handled, and completely safe for human consumption. I accept full responsibility for food safety.',
+                          onChanged: (v) => setState(() => _agreeFoodSafety = v ?? false),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -281,7 +303,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 CustomButton(
                   text: 'Register Account',
                   isLoading: isLoading,
-                  onPressed: _areAllAgreementsAccepted ? _submitRegister : null,
+                  onPressed: _areRoleAgreementsAccepted ? _submitRegister : null,
                 ),
 
                 const SizedBox(height: 20),
@@ -318,29 +340,49 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
-class _CheckboxTile extends StatelessWidget {
+class _LegalCheckboxTile extends StatelessWidget {
   final bool value;
   final String title;
+  final String? linkText;
+  final VoidCallback? onLinkTap;
   final ValueChanged<bool?> onChanged;
 
-  const _CheckboxTile({
+  const _LegalCheckboxTile({
     required this.value,
     required this.title,
+    this.linkText,
+    this.onLinkTap,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      activeColor: AppColors.primary,
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.3),
-      ),
-      value: value,
-      onChanged: onChanged,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          activeColor: AppColors.primary,
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.3),
+          ),
+          value: value,
+          onChanged: onChanged,
+        ),
+        if (linkText != null && onLinkTap != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 36),
+            child: GestureDetector(
+              onTap: onLinkTap,
+              child: Text(
+                linkText!,
+                style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

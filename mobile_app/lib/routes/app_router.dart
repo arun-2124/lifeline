@@ -7,6 +7,8 @@ import 'package:mobile_app/screens/auth/forgot_password_screen.dart';
 import 'package:mobile_app/screens/auth/login_screen.dart';
 import 'package:mobile_app/screens/auth/register_screen.dart';
 import 'package:mobile_app/screens/auth/welcome_screen.dart';
+import 'package:mobile_app/screens/legal/privacy_policy_screen.dart';
+import 'package:mobile_app/screens/legal/terms_conditions_screen.dart';
 import 'package:mobile_app/screens/beneficiary/beneficiary_home_screen.dart';
 import 'package:mobile_app/screens/beneficiary/beneficiary_request_history_screen.dart';
 import 'package:mobile_app/screens/beneficiary/direct_meal_request_screen.dart';
@@ -127,6 +129,10 @@ class AppRouter {
   static const String communityLeaderboardRoute = '/home-cook/leaderboard';
   static const String impactDashboardRoute = '/home-cook/impact';
   static const String adminHomeCookVerificationRoute = '/admin/home-cook-verification';
+
+  // Legal Compliance Routes (Phase 2)
+  static const String termsConditionsRoute = '/legal/terms';
+  static const String privacyPolicyRoute = '/legal/privacy';
 
   static String getHomeRouteForRole(String role) {
     switch (role.trim().toLowerCase()) {
@@ -293,6 +299,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ImpactDashboardScreen());
       case adminHomeCookVerificationRoute:
         return MaterialPageRoute(builder: (_) => const AdminHomeCookVerificationScreen());
+      case termsConditionsRoute:
+        return MaterialPageRoute(builder: (_) => const TermsConditionsScreen());
+      case privacyPolicyRoute:
+        return MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => NotFoundScreen(routeName: settings.name),
