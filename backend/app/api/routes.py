@@ -8,6 +8,8 @@ from app.api.endpoints import (
     sustainability,
     carbon,
     recommendations,
+    fraud,
+    priority,
 )
 
 api_router = APIRouter()
@@ -20,3 +22,5 @@ api_router.include_router(route_optimization.router, prefix="/ai", tags=["Route 
 api_router.include_router(sustainability.router, prefix="/ai", tags=["Sustainability Score"])
 api_router.include_router(carbon.router, prefix="/ai", tags=["Carbon Reduction"])
 api_router.include_router(recommendations.router, prefix="/ai", tags=["Meal Recommendations"])
+api_router.include_router(fraud.router, prefix="/ai", tags=["AI Fraud Detection"])
+api_router.include_router(priority.router, prefix="/ai", tags=["AI Priority Scoring"])
