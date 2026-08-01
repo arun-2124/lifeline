@@ -7,6 +7,7 @@ class RoleSelectorWidget extends StatelessWidget {
 
   static const List<Map<String, dynamic>> roles = [
     {'title': 'Donor', 'icon': Icons.volunteer_activism, 'subtitle': 'Donate food & supplies'},
+    {'title': 'Community Home Cook', 'icon': Icons.soup_kitchen_rounded, 'subtitle': 'Share home-cooked meals'},
     {'title': 'NGO', 'icon': Icons.business, 'subtitle': 'Distribute to those in need'},
     {'title': 'Volunteer', 'icon': Icons.handshake, 'subtitle': 'Assist in ground operations'},
     {'title': 'Delivery Partner', 'icon': Icons.local_shipping, 'subtitle': 'Transport food packages'},

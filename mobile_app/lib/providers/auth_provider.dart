@@ -64,7 +64,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         AppLogger.d('AUTH_PROVIDER: Auth state changed — user: ${firebaseUser.uid}, emailVerified: ${firebaseUser.emailVerified}');
         try {
-          // Fetch Firestore Profile
           final result = await _authRepository.getUserProfile(uid: firebaseUser.uid);
           if (result is ApiSuccess<UserModel>) {
             final userModel = result.data.copyWith(isEmailVerified: firebaseUser.emailVerified);
@@ -81,8 +80,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
             }
             AppLogger.d('AUTH_PROVIDER: State set to ${state.status}, role: ${userModel.role}');
           } else {
-            // If Firestore profile not ready yet
-            AppLogger.e('AUTH_PROVIDER: Firestore profile not found, using fallback');
             final fallbackUser = UserModel(
               uid: firebaseUser.uid,
               fullName: firebaseUser.displayName ?? '',
@@ -303,16 +300,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: result.failure.message,
-      );
-    }
-  }
-
-  void bypassVerification() {
-    if (state.user != null) {
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: state.user!.copyWith(isEmailVerified: true),
-        infoMessage: 'Verification bypassed for development.',
       );
     }
   }

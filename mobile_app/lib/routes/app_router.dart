@@ -139,6 +139,10 @@ class AppRouter {
         return deliveryHomeRoute;
       case 'beneficiary':
         return beneficiaryHomeRoute;
+      case 'community home cook':
+      case 'home cook':
+      case 'cook':
+        return verifiedHomeCookDashboardRoute;
       case 'admin':
         return adminHomeRoute;
       case 'donor':
