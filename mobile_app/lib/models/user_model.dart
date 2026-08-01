@@ -19,6 +19,21 @@ class UserModel extends Equatable {
   final String? fcmToken;
   final double trustScore;
 
+  // Phase 3 Profile & Reputation Fields
+  final String? bio;
+  final String? address;
+  final String? city;
+  final String? state;
+  final String? country;
+  final double reputationScore;
+  final double foodSafetyScore;
+  final double completionRate;
+  final double cancellationRate;
+  final int responseTimeMinutes;
+  final int verificationLevel; // Level 1 (Community Member) to Level 5 (Lifeline Champion)
+  final List<String> unlockedBadges;
+  final bool notificationsEnabled;
+
   const UserModel({
     required this.uid,
     required this.fullName,
@@ -36,7 +51,36 @@ class UserModel extends Equatable {
     this.photoUrl,
     this.fcmToken,
     this.trustScore = 5.0,
+    this.bio = 'Lifeline Community Member',
+    this.address = '',
+    this.city = 'Bengaluru',
+    this.state = 'Karnataka',
+    this.country = 'India',
+    this.reputationScore = 98.5,
+    this.foodSafetyScore = 99.0,
+    this.completionRate = 99.5,
+    this.cancellationRate = 0.5,
+    this.responseTimeMinutes = 8,
+    this.verificationLevel = 1,
+    this.unlockedBadges = const ['🌱 First Donation', '⭐ 5-Star Member'],
+    this.notificationsEnabled = true,
   });
+
+  static String getVerificationLevelName(int level) {
+    switch (level) {
+      case 2:
+        return 'Level 2: Verified User';
+      case 3:
+        return 'Level 3: Trusted Member';
+      case 4:
+        return 'Level 4: Verified Organization';
+      case 5:
+        return 'Level 5: Lifeline Champion';
+      case 1:
+      default:
+        return 'Level 1: Community Member';
+    }
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -56,6 +100,19 @@ class UserModel extends Equatable {
       'photoUrl': photoUrl,
       'fcmToken': fcmToken,
       'trustScore': trustScore,
+      'bio': bio,
+      'address': address,
+      'city': city,
+      'state': state,
+      'country': country,
+      'reputationScore': reputationScore,
+      'foodSafetyScore': foodSafetyScore,
+      'completionRate': completionRate,
+      'cancellationRate': cancellationRate,
+      'responseTimeMinutes': responseTimeMinutes,
+      'verificationLevel': verificationLevel,
+      'unlockedBadges': unlockedBadges,
+      'notificationsEnabled': notificationsEnabled,
     };
   }
 
@@ -66,6 +123,12 @@ class UserModel extends Equatable {
       'updatedAt': FieldValue.serverTimestamp(),
       if (photoUrl != null) 'photoUrl': photoUrl,
       if (fcmToken != null) 'fcmToken': fcmToken,
+      if (bio != null) 'bio': bio,
+      if (address != null) 'address': address,
+      if (city != null) 'city': city,
+      if (state != null) 'state': state,
+      if (country != null) 'country': country,
+      'notificationsEnabled': notificationsEnabled,
     };
   }
 
@@ -87,6 +150,21 @@ class UserModel extends Equatable {
       photoUrl: map['photoUrl'] as String?,
       fcmToken: map['fcmToken'] as String?,
       trustScore: (map['trustScore'] as num?)?.toDouble() ?? 5.0,
+      bio: map['bio'] as String? ?? 'Lifeline Community Member',
+      address: map['address'] as String? ?? '',
+      city: map['city'] as String? ?? 'Bengaluru',
+      state: map['state'] as String? ?? 'Karnataka',
+      country: map['country'] as String? ?? 'India',
+      reputationScore: (map['reputationScore'] as num?)?.toDouble() ?? 98.5,
+      foodSafetyScore: (map['foodSafetyScore'] as num?)?.toDouble() ?? 99.0,
+      completionRate: (map['completionRate'] as num?)?.toDouble() ?? 99.5,
+      cancellationRate: (map['cancellationRate'] as num?)?.toDouble() ?? 0.5,
+      responseTimeMinutes: (map['responseTimeMinutes'] as num?)?.toInt() ?? 8,
+      verificationLevel: (map['verificationLevel'] as num?)?.toInt() ?? 1,
+      unlockedBadges: map['unlockedBadges'] != null
+          ? List<String>.from(map['unlockedBadges'] as List)
+          : const ['🌱 First Donation', '⭐ 5-Star Member'],
+      notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
     );
   }
 
@@ -114,6 +192,19 @@ class UserModel extends Equatable {
     String? photoUrl,
     String? fcmToken,
     double? trustScore,
+    String? bio,
+    String? address,
+    String? city,
+    String? state,
+    String? country,
+    double? reputationScore,
+    double? foodSafetyScore,
+    double? completionRate,
+    double? cancellationRate,
+    int? responseTimeMinutes,
+    int? verificationLevel,
+    List<String>? unlockedBadges,
+    bool? notificationsEnabled,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -132,6 +223,19 @@ class UserModel extends Equatable {
       photoUrl: photoUrl ?? this.photoUrl,
       fcmToken: fcmToken ?? this.fcmToken,
       trustScore: trustScore ?? this.trustScore,
+      bio: bio ?? this.bio,
+      address: address ?? this.address,
+      city: city ?? this.city,
+      state: state ?? this.state,
+      country: country ?? this.country,
+      reputationScore: reputationScore ?? this.reputationScore,
+      foodSafetyScore: foodSafetyScore ?? this.foodSafetyScore,
+      completionRate: completionRate ?? this.completionRate,
+      cancellationRate: cancellationRate ?? this.cancellationRate,
+      responseTimeMinutes: responseTimeMinutes ?? this.responseTimeMinutes,
+      verificationLevel: verificationLevel ?? this.verificationLevel,
+      unlockedBadges: unlockedBadges ?? this.unlockedBadges,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     );
   }
 
@@ -153,5 +257,18 @@ class UserModel extends Equatable {
         photoUrl,
         fcmToken,
         trustScore,
+        bio,
+        address,
+        city,
+        state,
+        country,
+        reputationScore,
+        foodSafetyScore,
+        completionRate,
+        cancellationRate,
+        responseTimeMinutes,
+        verificationLevel,
+        unlockedBadges,
+        notificationsEnabled,
       ];
 }

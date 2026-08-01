@@ -1,15 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
 import 'package:mobile_app/core/helpers/date_formatter.dart';
+import 'package:mobile_app/models/user_model.dart';
 import 'package:mobile_app/providers/app_providers.dart';
 import 'package:mobile_app/routes/app_router.dart';
+import 'package:mobile_app/widgets/glass_card.dart';
 
-class UserProfileScreen extends ConsumerWidget {
+class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploadingPhoto = false;
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    try {
+      final image = await _picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploadingPhoto = true);
+      final user = ref.read(authNotifierProvider).user;
+      if (user != null) {
+        final storage = ref.read(firebaseStorageServiceProvider);
+        final photoUrl = await storage.uploadProfilePhoto(
+          userId: user.uid,
+          filePath: image.path,
+        );
+
+        await ref.read(authNotifierProvider.notifier).updateProfile(
+              fullName: user.fullName,
+              phoneNumber: user.phoneNumber,
+              photoUrl: photoUrl,
+            );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile photo updated successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload photo: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  void _showPhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.primary),
+              title: const Text('Take Photo from Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.success),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadPhoto(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final user = authState.user;
 
@@ -23,11 +115,14 @@ class UserProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: const Text(
+          'My Profile & Reputation',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit Profile',
+            icon: const Icon(Icons.edit_rounded),
+            tooltip: 'Edit Profile Details',
             onPressed: () {
               Navigator.of(context).pushNamed(AppRouter.editProfileRoute);
             },
@@ -35,124 +130,207 @@ class UserProfileScreen extends ConsumerWidget {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Stack(
+            // HERO PROFILE HEADER WITH BADGE
+            GlassCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                    backgroundImage: user.photoUrl != null && user.photoUrl!.isNotEmpty
-                        ? NetworkImage(user.photoUrl!)
-                        : null,
-                    child: user.photoUrl == null || user.photoUrl!.isEmpty
-                        ? Text(
-                            user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                            style: const TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 54,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                          backgroundImage: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                              ? NetworkImage(user.photoUrl!)
+                              : null,
+                          child: _isUploadingPhoto
+                              ? const CircularProgressIndicator()
+                              : user.photoUrl == null || user.photoUrl!.isEmpty
+                                  ? Text(
+                                      user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
+                                      style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                    )
+                                  : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _showPhotoOptions,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
                             ),
-                          )
-                        : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    user.fullName.isNotEmpty ? user.fullName : 'User Name',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(user.email, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                  const SizedBox(height: 8),
+                  Text(
+                    user.bio ?? 'Lifeline Community Member',
+                    style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGlow,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.workspace_premium_rounded, color: AppColors.primary, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              UserModel.getVerificationLevelName(user.verificationLevel),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          user.role,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.success),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              user.fullName.isNotEmpty ? user.fullName : 'User Name',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              user.email,
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 20),
+
+            // REPUTATION & SAFETY SCORE GAUGES
+            const Text('Reputation & Quality Scores', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Chip(
-                  avatar: const Icon(Icons.shield_outlined, size: 16, color: AppColors.primary),
-                  label: Text(
-                    user.role,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                Expanded(
+                  child: _GaugeCard(
+                    title: 'Trust Score',
+                    value: '${user.trustScore} ★',
+                    subtitle: 'From Peer Ratings',
+                    color: Colors.amber,
                   ),
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  side: BorderSide.none,
                 ),
-                const SizedBox(width: 8),
-                Chip(
-                  avatar: Icon(
-                    user.accountStatus == 'ACTIVE' ? Icons.check_circle_outline : Icons.pending_outlined,
-                    size: 16,
-                    color: user.accountStatus == 'ACTIVE' ? AppColors.success : AppColors.warning,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _GaugeCard(
+                    title: 'Reputation',
+                    value: '${user.reputationScore.toStringAsFixed(1)}%',
+                    subtitle: 'Platform Reliability',
+                    color: AppColors.success,
                   ),
-                  label: Text(
-                    user.accountStatus,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: user.accountStatus == 'ACTIVE' ? AppColors.success : AppColors.warning,
-                    ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _GaugeCard(
+                    title: 'Food Safety',
+                    value: '${user.foodSafetyScore.toStringAsFixed(1)}%',
+                    subtitle: 'Hygiene Rating',
+                    color: AppColors.primary,
                   ),
-                  backgroundColor: user.accountStatus == 'ACTIVE'
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.warning.withValues(alpha: 0.1),
-                  side: BorderSide.none,
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Color(0xFFE9ECEF)),
-              ),
-              color: Colors.white,
+
+            const SizedBox(height: 20),
+
+            // PERFORMANCE & OPERATIONAL METRICS
+            GlassCard(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _ProfileDetailTile(
-                    icon: Icons.person_outline,
-                    title: 'Full Name',
-                    value: user.fullName,
+                  _MetricRow(label: 'Completion Rate', value: '${user.completionRate.toStringAsFixed(1)}%', icon: Icons.check_circle_outline_rounded, color: AppColors.success),
+                  const Divider(height: 16),
+                  _MetricRow(label: 'Cancellation Rate', value: '${user.cancellationRate.toStringAsFixed(1)}%', icon: Icons.cancel_outlined, color: AppColors.error),
+                  const Divider(height: 16),
+                  _MetricRow(label: 'Avg Response Time', value: '${user.responseTimeMinutes} mins', icon: Icons.timer_outlined, color: AppColors.info),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // UNLOCKED BADGES & ACHIEVEMENTS
+            const Text('Unlocked Badges & Achievements', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: user.unlockedBadges.map((badge) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                   ),
-                  const Divider(height: 1, color: Color(0xFFF1F3F5)),
-                  _ProfileDetailTile(
-                    icon: Icons.email_outlined,
-                    title: 'Email Address',
-                    value: user.email,
-                    subtitle: user.isEmailVerified ? 'Verified' : 'Unverified',
+                  child: Text(
+                    badge,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
-                  const Divider(height: 1, color: Color(0xFFF1F3F5)),
-                  _ProfileDetailTile(
-                    icon: Icons.phone_outlined,
-                    title: 'Phone Number',
-                    value: user.phoneNumber.isNotEmpty ? user.phoneNumber : 'Not provided',
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ACCOUNT DETAILS & SETTINGS SHORTCUTS
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.location_on_rounded, color: AppColors.primary),
+                    title: const Text('Address & Location'),
+                    subtitle: Text('${(user.address != null && user.address!.isNotEmpty) ? user.address : "Bengaluru"}, ${user.city ?? "Bengaluru"}, ${user.state ?? "Karnataka"}'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).pushNamed(AppRouter.editProfileRoute),
                   ),
-                  const Divider(height: 1, color: Color(0xFFF1F3F5)),
-                  _ProfileDetailTile(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Verification Status',
-                    value: user.verificationStatus.toUpperCase(),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.calendar_today_rounded, color: AppColors.secondary),
+                    title: const Text('Member Since'),
+                    subtitle: Text(DateFormatter.formatShortDate(user.createdAt)),
                   ),
-                  const Divider(height: 1, color: Color(0xFFF1F3F5)),
-                  _ProfileDetailTile(
-                    icon: Icons.calendar_today_outlined,
-                    title: 'Member Since',
-                    value: DateFormatter.formatShortDate(user.createdAt),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+                    title: const Text('Log Out', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      ref.read(authNotifierProvider.notifier).logout();
+                      Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.loginRoute, (route) => false);
+                    },
                   ),
                 ],
               ),
@@ -164,41 +342,59 @@ class UserProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ProfileDetailTile extends StatelessWidget {
-  final IconData icon;
+class _GaugeCard extends StatelessWidget {
   final String title;
   final String value;
-  final String? subtitle;
+  final String subtitle;
+  final Color color;
 
-  const _ProfileDetailTile({
-    required this.icon,
+  const _GaugeCard({
     required this.title,
     required this.value,
-    this.subtitle,
+    required this.subtitle,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.secondary, size: 22),
-      title: Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-      subtitle: Text(
-        value.isNotEmpty ? value : 'N/A',
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+    return GlassCard(
+      padding: const EdgeInsets.all(12),
+      borderRadius: 16,
+      child: Column(
+        children: [
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(subtitle, style: const TextStyle(fontSize: 9, color: AppColors.textSecondary), textAlign: TextAlign.center),
+        ],
       ),
-      trailing: subtitle != null
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                subtitle!,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success),
-              ),
-            )
-          : null,
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _MetricRow({required this.label, required this.value, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+          ],
+        ),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+      ],
     );
   }
 }
