@@ -186,7 +186,8 @@ class AppRouter {
       case myDonationsRoute:
         return MaterialPageRoute(builder: (_) => const MyDonationsScreen());
       case donationDetailsRoute:
-        return MaterialPageRoute(builder: (_) => const DonationDetailsScreen());
+        final donation = settings.arguments as DonationModel;
+        return MaterialPageRoute(builder: (_) => DonationDetailsScreen(donation: donation));
       case editDonationRoute:
         return MaterialPageRoute(builder: (_) => const EditDonationScreen());
       case aiFoodInspectorRoute:

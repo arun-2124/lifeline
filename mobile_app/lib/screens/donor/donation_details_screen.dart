@@ -2,209 +2,170 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_app/core/constants/app_colors.dart';
 import 'package:mobile_app/core/helpers/date_formatter.dart';
-import 'package:mobile_app/providers/app_providers.dart';
-import 'package:mobile_app/routes/app_router.dart';
-
-import 'package:mobile_app/widgets/qr_code_card_widget.dart';
-import 'package:mobile_app/widgets/status_badge_widget.dart';
-import 'package:mobile_app/widgets/status_tracker_widget.dart';
+import 'package:mobile_app/models/donation_model.dart';
+import 'package:mobile_app/models/user_model.dart';
+import 'package:mobile_app/widgets/glass_card.dart';
 
 class DonationDetailsScreen extends ConsumerWidget {
-  const DonationDetailsScreen({super.key});
+  final DonationModel donation;
 
-  void _showCancelDialog(BuildContext context, WidgetRef ref, String donationId) {
-    final reasonController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return AlertDialog(
-          title: const Text('Cancel Food Donation'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Are you sure you want to cancel this donation?'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'Reason for cancellation',
-                  hintText: 'e.g. Food damaged / Withdrawal',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: const Text('Keep Active'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-              onPressed: () async {
-                Navigator.of(dialogCtx).pop();
-                final success = await ref
-                    .read(donationNotifierProvider.notifier)
-                    .cancelDonation(donationId, reasonController.text.trim());
-
-                if (success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Donation cancelled.')),
-                  );
-                }
-              },
-              child: const Text('Cancel Donation', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  const DonationDetailsScreen({super.key, required this.donation});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final donationState = ref.watch(donationNotifierProvider);
-    final donation = donationState.selectedDonation;
-
-    if (donation == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Donation Details')),
-        body: const Center(child: Text('No donation selected.')),
-      );
-    }
-
-    final isCancellable = ['pending', 'published'].contains(donation.status.toLowerCase());
+    final hoursLeft = donation.expiryTime.difference(DateTime.now()).inHours;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Donation Details'),
-        actions: [
-          if (isCancellable)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit Donation',
-              onPressed: () {
-                Navigator.of(context).pushNamed(AppRouter.editDonationRoute);
-              },
-            ),
-        ],
+        title: const Text(
+          'Donation Details & Lifecycle',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            StatusTrackerWidget(currentStatus: donation.status),
-            const SizedBox(height: 20),
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Color(0xFFE9ECEF)),
-              ),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            donation.foodName,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
+            // HERO DONATION CARD WITH STATUS BADGE & EXPIRY
+            GlassCard(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGlow,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        StatusBadgeWidget(status: donation.status),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _DetailChip(
-                          icon: Icons.category_outlined,
-                          label: donation.foodCategory.replaceAll('_', ' ').toUpperCase(),
-                          color: AppColors.primary,
+                        child: Text(
+                          donation.status.toUpperCase(),
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                         ),
-                        const SizedBox(width: 8),
-                        _DetailChip(
-                          icon: Icons.restaurant,
-                          label: '${donation.foodType} • ${donation.numberOfMeals} Meals',
-                          color: AppColors.success,
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24, thickness: 1, color: Color(0xFFF1F3F5)),
-                    _InfoRow(
-                      icon: Icons.scale_outlined,
-                      label: 'Quantity',
-                      value: '${donation.quantity} ${donation.unit}',
-                    ),
-                    _InfoRow(
-                      icon: Icons.schedule_outlined,
-                      label: 'Preparation Time',
-                      value: DateFormatter.formatTime(donation.preparationTime),
-                    ),
-                    _InfoRow(
-                      icon: Icons.timer_outlined,
-                      label: 'Expiry Time',
-                      value: DateFormatter.formatTime(donation.expiryTime),
-                    ),
-                    _InfoRow(
-                      icon: Icons.location_on_outlined,
-                      label: 'Pickup Address',
-                      value: donation.pickupAddress,
-                    ),
-                    _InfoRow(
-                      icon: Icons.my_location_outlined,
-                      label: 'GPS Coordinates',
-                      value: '${donation.latitude}, ${donation.longitude}',
-                    ),
-                    _InfoRow(
-                      icon: Icons.phone_outlined,
-                      label: 'Contact Phone',
-                      value: donation.contactNumber,
-                    ),
-                    if (donation.specialInstructions != null &&
-                        donation.specialInstructions!.isNotEmpty)
-                      _InfoRow(
-                        icon: Icons.note_outlined,
-                        label: 'Special Instructions',
-                        value: donation.specialInstructions!,
                       ),
-                  ],
-                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: hoursLeft > 2 ? AppColors.success.withValues(alpha: 0.15) : AppColors.error.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Expires in ${hoursLeft > 0 ? hoursLeft : 0}h',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: hoursLeft > 2 ? AppColors.success : AppColors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    donation.foodName,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${donation.foodCategory} • ${donation.foodType} • ${donation.cuisine} Cuisine',
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: _InfoTile(label: 'Quantity', value: '${donation.quantity} ${donation.unit}')),
+                      Expanded(child: _InfoTile(label: 'Serves', value: '${donation.peopleServed} People')),
+                      Expanded(child: _InfoTile(label: 'Storage', value: donation.storageMethod)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            QrCodeCardWidget(donationId: donation.donationId),
-            const SizedBox(height: 24),
-            if (isCancellable)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+
+            const SizedBox(height: 20),
+
+            // DONOR VERIFICATION & REPUTATION CARD
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      donation.donorName.isNotEmpty ? donation.donorName[0].toUpperCase() : 'D',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                     ),
                   ),
-                  onPressed: () => _showCancelDialog(context, ref, donation.donationId),
-                  icon: const Icon(Icons.cancel_outlined),
-                  label: const Text('Cancel Donation', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          donation.donorName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                        Text(
+                          '${UserModel.getVerificationLevelName(donation.donorVerificationLevel)} • ${donation.donorTrustScore} ★',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+            ),
+
             const SizedBox(height: 20),
+
+            // PICKUP LOCATION & INSTRUCTIONS
+            const Text('Pickup Location & Contact', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 10),
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          donation.pickupAddress,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (donation.landmark != null && donation.landmark!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text('Landmark: ${donation.landmark}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                  const SizedBox(height: 6),
+                  Text('Contact: ${donation.contactNumber}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // LIFECYCLE TIMELINE
+            const Text('Status Lifecycle Timeline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 10),
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _TimelineNode(title: 'Submitted & Verified', subtitle: DateFormatter.formatShortDate(donation.createdAt), isDone: true),
+                  _TimelineNode(title: 'Available for Claim', subtitle: 'Published to local NGOs & Community', isDone: true),
+                  _TimelineNode(title: 'Volunteer Assigned', subtitle: donation.assignedVolunteerName ?? 'Pending Volunteer Pickup', isDone: donation.assignedVolunteerId != null),
+                  _TimelineNode(title: 'Delivered & Completed', subtitle: 'Recipient distribution verified', isDone: donation.status == 'Completed'),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -212,71 +173,52 @@ class DonationDetailsScreen extends ConsumerWidget {
   }
 }
 
-class _DetailChip extends StatelessWidget {
-  final IconData icon;
+class _InfoTile extends StatelessWidget {
   final String label;
-  final Color color;
+  final String value;
 
-  const _DetailChip({required this.icon, required this.label, required this.color});
+  const _InfoTile({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primary)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+      ],
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
+class _TimelineNode extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isDone;
 
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _TimelineNode({required this.title, required this.subtitle, required this.isDone});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.secondary),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
+    return Row(
+      children: [
+        Icon(
+          isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+          color: isDone ? AppColors.success : AppColors.secondary,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isDone ? AppColors.textPrimary : AppColors.textSecondary)),
+              Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              const SizedBox(height: 8),
+            ],
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
