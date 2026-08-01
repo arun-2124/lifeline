@@ -171,6 +171,61 @@ class _NgoHomeScreenState extends ConsumerState<NgoHomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
+
+                          // AI SMART MATCHING RECOMMENDATION CARD (PHASE 5)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.heroGradient,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryGlow,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 14),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            'FastAPI AI Smart Recommendation',
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Text('Match Score: 9.6 / 10', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber)),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Top Recommendation: 50 Meals Fresh Biryani',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Distance: 2.1 km • Expiry: 3h 40m • High NGO Capacity Match',
+                                  style: TextStyle(fontSize: 12, color: Colors.white70),
+                                ),
+                              ],
+                            ),
+                          ),
                           Row(
                             children: [
                               Expanded(
