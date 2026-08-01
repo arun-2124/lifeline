@@ -6,6 +6,7 @@ import 'package:mobile_app/routes/app_router.dart';
 import 'package:mobile_app/widgets/app_drawer_widget.dart';
 import 'package:mobile_app/widgets/dashboard_header_widget.dart';
 import 'package:mobile_app/widgets/feature_card_widget.dart';
+import 'package:mobile_app/screens/admin/admin_audit_log_screen.dart';
 import 'package:mobile_app/widgets/profile_summary_card.dart';
 
 class AdminHomeScreen extends ConsumerWidget {
@@ -87,8 +88,8 @@ class AdminHomeScreen extends ConsumerWidget {
                           iconColor: AppColors.secondary,
                           tag: 'Live Module',
                           onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Audit Analytics coming soon.')),
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const AdminAuditLogScreen()),
                             );
                           },
                         ),
