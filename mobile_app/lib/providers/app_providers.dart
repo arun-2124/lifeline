@@ -5,6 +5,8 @@ import 'package:mobile_app/repositories/community_sharing_repository.dart';
 import 'package:mobile_app/repositories/community_sharing_repository_impl.dart';
 import 'package:mobile_app/repositories/donation_repository.dart';
 import 'package:mobile_app/repositories/donation_repository_impl.dart';
+import 'package:mobile_app/repositories/home_cook_repository.dart';
+import 'package:mobile_app/repositories/home_cook_repository_impl.dart';
 import 'package:mobile_app/repositories/ngo_repository.dart';
 import 'package:mobile_app/repositories/ngo_repository_impl.dart';
 import 'package:mobile_app/repositories/tracking_repository.dart';
@@ -21,6 +23,7 @@ import 'package:mobile_app/services/ai_service.dart';
 import 'package:mobile_app/providers/auth_provider.dart';
 import 'package:mobile_app/providers/community_sharing_provider.dart';
 import 'package:mobile_app/providers/donation_provider.dart';
+import 'package:mobile_app/providers/home_cook_provider.dart';
 import 'package:mobile_app/providers/ngo_provider.dart';
 import 'package:mobile_app/providers/tracking_provider.dart';
 import 'package:mobile_app/providers/volunteer_provider.dart';
@@ -124,5 +127,15 @@ final communitySharingRepositoryProvider = Provider<CommunitySharingRepository>(
 final communitySharingNotifierProvider = StateNotifierProvider<CommunitySharingNotifier, CommunitySharingState>((ref) {
   return CommunitySharingNotifier(
     ref.watch(communitySharingRepositoryProvider),
+  );
+});
+
+final homeCookRepositoryProvider = Provider<HomeCookRepository>((ref) {
+  return HomeCookRepositoryImpl();
+});
+
+final homeCookNotifierProvider = StateNotifierProvider<HomeCookNotifier, HomeCookState>((ref) {
+  return HomeCookNotifier(
+    ref.watch(homeCookRepositoryProvider),
   );
 });

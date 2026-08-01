@@ -70,6 +70,17 @@ class AdminHomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 10),
                         FeatureCardWidget(
+                          title: 'Home Cook Level 2–5 Verification',
+                          description: 'Review ID proofs & kitchen hygiene photos for Home Cook upgrades.',
+                          icon: Icons.workspace_premium_rounded,
+                          iconColor: Colors.amber,
+                          tag: 'Level Upgrade',
+                          onTap: () {
+                            Navigator.of(context).pushNamed(AppRouter.adminHomeCookVerificationRoute);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        FeatureCardWidget(
                           title: 'System Analytics & Audit Logs',
                           description: 'Monitor live donations, AI matching performance, and security logs.',
                           icon: Icons.analytics_outlined,

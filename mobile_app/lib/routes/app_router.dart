@@ -21,7 +21,12 @@ import 'package:mobile_app/screens/common/esg_certificate_generator_screen.dart'
 import 'package:mobile_app/screens/common/not_found_screen.dart';
 import 'package:mobile_app/screens/common/splash_screen.dart';
 import 'package:mobile_app/screens/common/user_profile_screen.dart';
+import 'package:mobile_app/screens/admin/admin_home_cook_verification_screen.dart';
 import 'package:mobile_app/screens/admin/admin_withdrawals_screen.dart';
+import 'package:mobile_app/screens/home_cook/community_leaderboard_screen.dart';
+import 'package:mobile_app/screens/home_cook/home_cook_verification_screen.dart';
+import 'package:mobile_app/screens/home_cook/impact_dashboard_screen.dart';
+import 'package:mobile_app/screens/home_cook/verified_home_cook_dashboard_screen.dart';
 import 'package:mobile_app/screens/delivery/csr_sponsorship_screen.dart';
 import 'package:mobile_app/screens/delivery/delivery_home_screen.dart';
 import 'package:mobile_app/screens/delivery/delivery_wallet_dashboard_screen.dart';
@@ -115,6 +120,13 @@ class AppRouter {
   static const String createCommunityDonationRoute = '/community/create';
   static const String communityDonationDetailsRoute = '/community/details';
   static const String communityChatRoute = '/community/chat';
+
+  // Verified Home Cook Routes
+  static const String verifiedHomeCookDashboardRoute = '/home-cook/dashboard';
+  static const String homeCookVerificationRoute = '/home-cook/verification';
+  static const String communityLeaderboardRoute = '/home-cook/leaderboard';
+  static const String impactDashboardRoute = '/home-cook/impact';
+  static const String adminHomeCookVerificationRoute = '/admin/home-cook-verification';
 
   static String getHomeRouteForRole(String role) {
     switch (role.trim().toLowerCase()) {
@@ -267,6 +279,16 @@ class AppRouter {
       case communityChatRoute:
         final donation = settings.arguments as CommunityDonationModel;
         return MaterialPageRoute(builder: (_) => CommunityChatScreen(donation: donation));
+      case verifiedHomeCookDashboardRoute:
+        return MaterialPageRoute(builder: (_) => const VerifiedHomeCookDashboardScreen());
+      case homeCookVerificationRoute:
+        return MaterialPageRoute(builder: (_) => const HomeCookVerificationScreen());
+      case communityLeaderboardRoute:
+        return MaterialPageRoute(builder: (_) => const CommunityLeaderboardScreen());
+      case impactDashboardRoute:
+        return MaterialPageRoute(builder: (_) => const ImpactDashboardScreen());
+      case adminHomeCookVerificationRoute:
+        return MaterialPageRoute(builder: (_) => const AdminHomeCookVerificationScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => NotFoundScreen(routeName: settings.name),

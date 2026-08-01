@@ -269,6 +269,17 @@ class _DonorHomeScreenState extends ConsumerState<DonorHomeScreen> {
                           ),
                           const SizedBox(height: 12),
                           FeatureCardWidget(
+                            title: 'Verified Home Cook Portal',
+                            description: '5-Level Progression (Level 1 to Gold Chef), Trust Scores, Badges & Impact Dashboard.',
+                            icon: Icons.verified_user_rounded,
+                            iconColor: Colors.amber,
+                            tag: 'Level 1–5 Cook',
+                            onTap: () {
+                              Navigator.of(context).pushNamed(AppRouter.verifiedHomeCookDashboardRoute);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          FeatureCardWidget(
                             title: 'Lifeline AI Vision Engine',
                             description: 'Snap a photo of food to automatically estimate portions and freshness score.',
                             icon: Icons.linked_camera_rounded,
