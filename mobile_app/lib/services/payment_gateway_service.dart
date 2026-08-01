@@ -1,50 +1,65 @@
-import 'package:flutter/foundation.dart';
+abstract class PaymentGatewayService {
+  Future<PaymentResult> processPayment({
+    required String orderId,
+    required double amount,
+    required String currency,
+    required String paymentMethod, // UPI, CARD, NET_BANKING, WALLET
+  });
 
-enum PaymentGatewayType {
-  upi,
-  razorpay,
-  cashfree,
-  phonepe,
-  stripe,
+  Future<bool> verifyPaymentSignature({
+    required String paymentId,
+    required String signature,
+  });
+
+  Future<bool> processRefund({
+    required String paymentId,
+    required double amount,
+  });
 }
 
-abstract class PaymentGatewayService {
-  Future<bool> initializeGateway(PaymentGatewayType gatewayType);
-  Future<Map<String, dynamic>> processPayout({
-    required String recipientUpiOrAccount,
-    required double amount,
-    required String referenceId,
+class PaymentResult {
+  final bool isSuccess;
+  final String paymentId;
+  final String? errorMessage;
+  final String transactionReference;
+
+  const PaymentResult({
+    required this.isSuccess,
+    required this.paymentId,
+    this.errorMessage,
+    required this.transactionReference,
   });
-  Future<bool> verifyUpiId(String upiId);
 }
 
 class MockPaymentGatewayService implements PaymentGatewayService {
   @override
-  Future<bool> initializeGateway(PaymentGatewayType gatewayType) async {
-    debugPrint('[PAYMENT_GATEWAY] Initialized ${gatewayType.name} payment gateway abstraction layer.');
+  Future<PaymentResult> processPayment({
+    required String orderId,
+    required double amount,
+    required String currency,
+    required String paymentMethod,
+  }) async {
+    await Future.delayed(const Duration(seconds: 1));
+    return PaymentResult(
+      isSuccess: true,
+      paymentId: 'PAY_${DateTime.now().millisecondsSinceEpoch}',
+      transactionReference: 'TXN_REF_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  @override
+  Future<bool> verifyPaymentSignature({
+    required String paymentId,
+    required String signature,
+  }) async {
     return true;
   }
 
   @override
-  Future<Map<String, dynamic>> processPayout({
-    required String recipientUpiOrAccount,
+  Future<bool> processRefund({
+    required String paymentId,
     required double amount,
-    required String referenceId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 600));
-    debugPrint('[PAYMENT_GATEWAY] Mock payout of ₹$amount to $recipientUpiOrAccount (Ref: $referenceId)');
-    return {
-      'success': true,
-      'transactionRef': 'TXN_${DateTime.now().millisecondsSinceEpoch}',
-      'gateway': 'UPI_Mock_Adapter',
-    };
-  }
-
-  @override
-  Future<bool> verifyUpiId(String upiId) async {
-    if (upiId.contains('@')) {
-      return true;
-    }
-    return false;
+    return true;
   }
 }
