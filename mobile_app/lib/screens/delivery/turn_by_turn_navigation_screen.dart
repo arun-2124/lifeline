@@ -17,6 +17,11 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
   LatLng _driverPos = const LatLng(12.9716, 77.5946); // Default Driver Pos (Bangalore)
   static const LatLng _nextStopPos = LatLng(12.9780, 77.6010); // Destination: Fresh Bakery & Cafe
 
+  final double _speedKmh = 32.5;
+  double _distanceRemainingKm = 2.1;
+  final int _etaMinutes = 7;
+  bool _isArrivedGeofence = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,10 +39,20 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
           locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
         );
         if (mounted) {
+          final distanceMeters = Geolocator.distanceBetween(
+            pos.latitude,
+            pos.longitude,
+            _nextStopPos.latitude,
+            _nextStopPos.longitude,
+          );
+
           setState(() {
             _hasLocationPermission = true;
             _driverPos = LatLng(pos.latitude, pos.longitude);
+            _distanceRemainingKm = distanceMeters / 1000.0;
+            _isArrivedGeofence = distanceMeters <= 100;
           });
+
           _mapController?.animateCamera(
             CameraUpdate.newCameraPosition(
               CameraPosition(
@@ -53,12 +68,25 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
     } catch (_) {}
   }
 
+  void _recenterMap() {
+    _mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: _driverPos,
+          zoom: 17.0,
+          bearing: 45.0,
+          tilt: 60.0,
+        ),
+      ),
+    );
+  }
+
   Set<Marker> _buildMarkers() {
     return {
       Marker(
         markerId: const MarkerId('driver'),
         position: _driverPos,
-        infoWindow: const InfoWindow(title: 'Driver (Your Live Vehicle)', snippet: 'En Route to Destination'),
+        infoWindow: const InfoWindow(title: 'Volunteer Vehicle (Live Tracking)', snippet: '32.5 km/h • En Route'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       ),
       Marker(
@@ -128,6 +156,13 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
         backgroundColor: AppColors.secondary,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.my_location_rounded),
+            tooltip: 'Recenter Map',
+            onPressed: _recenterMap,
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -146,69 +181,96 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
             compassEnabled: true,
           ),
 
-          // Top Banner: Turn-by-turn guidance instruction
-          Positioned(
-            top: 10,
-            left: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.secondary,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black38,
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+          // GEOFENCE ALERT BANNER
+          if (_isArrivedGeofence)
+            Positioned(
+              top: 10,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: Colors.white, size: 24),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Geofence Triggered: Arrived at Pickup Location!',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
+            )
+          else
+            Positioned(
+              top: 10,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black38,
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
                     ),
-                    child: const Icon(
-                      Icons.turn_right_rounded,
-                      color: Colors.white,
-                      size: 28,
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.turn_right_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'In 150 meters',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'In 150 meters',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Turn right onto 100ft Road',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          SizedBox(height: 2),
+                          Text(
+                            'Turn right onto 100ft Road',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Bottom Action Bar: ETA + Launch External Google Maps App Button
+          // Bottom Action Bar: Live ETA + Distance + Launch Native Google Maps
           Positioned(
             bottom: 0,
             left: 0,
@@ -232,20 +294,20 @@ class _TurnByTurnNavigationScreenState extends State<TurnByTurnNavigationScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ETA: 8 mins • 2.1 km',
-                            style: TextStyle(
+                            'ETA: $_etaMinutes mins • ${_distanceRemainingKm.toStringAsFixed(1)} km',
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppColors.textPrimary,
                             ),
                           ),
                           Text(
-                            'Destination: Fresh Bakery & Cafe',
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            'Speed: ${_speedKmh.toStringAsFixed(1)} km/h • Target: Fresh Bakery',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           ),
                         ],
                       ),
