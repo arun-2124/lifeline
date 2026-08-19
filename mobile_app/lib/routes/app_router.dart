@@ -56,10 +56,14 @@ import 'package:mobile_app/screens/volunteer/available_deliveries_screen.dart';
 import 'package:mobile_app/screens/volunteer/volunteer_history_screen.dart';
 import 'package:mobile_app/screens/volunteer/volunteer_home_screen.dart';
 import 'package:mobile_app/screens/volunteer/volunteer_task_details_screen.dart';
+import 'package:mobile_app/screens/common/food_waste_upcycling_screen.dart';
+import 'package:mobile_app/screens/web/landing_page_screen.dart';
 
 class AppRouter {
   // Common Routes
   static const String splashRoute = '/';
+  static const String landingRoute = '/landing';
+  static const String upcyclingRoute = '/upcycling';
   static const String profileRoute = '/profile';
   static const String editProfileRoute = '/profile/edit';
   static const String esgCertificateRoute = '/common/esg-certificate';
@@ -161,6 +165,10 @@ class AppRouter {
     switch (settings.name) {
       case splashRoute:
         return MaterialPageRoute(builder: (_) => const SplashScreen());
+      case landingRoute:
+        return MaterialPageRoute(builder: (_) => const LandingPageScreen());
+      case upcyclingRoute:
+        return MaterialPageRoute(builder: (_) => const FoodWasteUpcyclingScreen());
       case profileRoute:
         return MaterialPageRoute(builder: (_) => const UserProfileScreen());
       case editProfileRoute:

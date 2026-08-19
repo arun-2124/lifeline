@@ -20,22 +20,26 @@ void main() async {
     AppLogger.i('Firebase initialized successfully for Lifeline.');
 
     try {
-      if (kDebugMode) {
-        await FirebaseAppCheck.instance.activate(
-          // ignore: deprecated_member_use
-          androidProvider: AndroidProvider.debug,
-          // ignore: deprecated_member_use
-          appleProvider: AppleProvider.debug,
-        );
-        AppLogger.i('Firebase App Check activated in Debug mode.');
+      if (!kIsWeb) {
+        if (kDebugMode) {
+          await FirebaseAppCheck.instance.activate(
+            // ignore: deprecated_member_use
+            androidProvider: AndroidProvider.debug,
+            // ignore: deprecated_member_use
+            appleProvider: AppleProvider.debug,
+          );
+          AppLogger.i('Firebase App Check activated in Debug mode.');
+        } else {
+          await FirebaseAppCheck.instance.activate(
+            // ignore: deprecated_member_use
+            androidProvider: AndroidProvider.playIntegrity,
+            // ignore: deprecated_member_use
+            appleProvider: AppleProvider.deviceCheck,
+          );
+          AppLogger.i('Firebase App Check activated in Production mode (Play Integrity / DeviceCheck).');
+        }
       } else {
-        await FirebaseAppCheck.instance.activate(
-          // ignore: deprecated_member_use
-          androidProvider: AndroidProvider.playIntegrity,
-          // ignore: deprecated_member_use
-          appleProvider: AppleProvider.deviceCheck,
-        );
-        AppLogger.i('Firebase App Check activated in Production mode (Play Integrity / DeviceCheck).');
+        AppLogger.i('Web Environment detected — Skipping mobile App Check native provider activation.');
       }
     } catch (appCheckError) {
       AppLogger.e('App Check activation deferred (Network/Provider fallback active)', appCheckError);
@@ -63,7 +67,7 @@ class LifelineApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       navigatorKey: NavigationService.navigatorKey,
-      initialRoute: AppRouter.splashRoute,
+      initialRoute: kIsWeb ? AppRouter.landingRoute : AppRouter.splashRoute,
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
